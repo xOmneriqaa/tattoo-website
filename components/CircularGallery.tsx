@@ -5,13 +5,6 @@ import { useEffect, useRef } from 'react';
 
 type GL = Renderer['gl'];
 
-function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
-  let timeout: number;
-  return function (this: any, ...args: Parameters<T>) {
-    window.clearTimeout(timeout);
-    timeout = window.setTimeout(() => func.apply(this, args), wait);
-  };
-}
 
 function lerp(p1: number, p2: number, t: number): number {
   return p1 + (p2 - p1) * t;
@@ -386,7 +379,6 @@ class App {
     last: number;
     position?: number;
   };
-  onCheckDebounce: (...args: any[]) => void;
   renderer!: Renderer;
   gl!: GL;
   camera!: Camera;
@@ -399,7 +391,6 @@ class App {
   raf: number = 0;
 
   boundOnResize!: () => void;
-  boundOnWheel!: (e: Event) => void;
   boundOnTouchDown!: (e: MouseEvent | TouchEvent) => void;
   boundOnTouchMove!: (e: MouseEvent | TouchEvent) => void;
   boundOnTouchUp!: () => void;
@@ -423,7 +414,6 @@ class App {
     this.container = container;
     this.scrollSpeed = scrollSpeed;
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
-    this.onCheckDebounce = debounce(this.onCheck.bind(this), 200);
     this.createRenderer();
     this.createCamera();
     this.createScene();
@@ -559,12 +549,6 @@ class App {
     this.onCheck();
   }
 
-  onWheel(e: Event) {
-    const wheelEvent = e as WheelEvent;
-    const delta = wheelEvent.deltaY || (wheelEvent as any).wheelDelta || (wheelEvent as any).detail;
-    this.scroll.target += (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
-    this.onCheckDebounce();
-  }
 
   onCheck() {
     if (!this.medias || !this.medias[0]) return;
@@ -605,13 +589,10 @@ class App {
 
   addEventListeners() {
     this.boundOnResize = this.onResize.bind(this);
-    this.boundOnWheel = this.onWheel.bind(this);
     this.boundOnTouchDown = this.onTouchDown.bind(this);
     this.boundOnTouchMove = this.onTouchMove.bind(this);
     this.boundOnTouchUp = this.onTouchUp.bind(this);
     window.addEventListener('resize', this.boundOnResize);
-    window.addEventListener('mousewheel', this.boundOnWheel);
-    window.addEventListener('wheel', this.boundOnWheel);
     window.addEventListener('mousedown', this.boundOnTouchDown);
     window.addEventListener('mousemove', this.boundOnTouchMove);
     window.addEventListener('mouseup', this.boundOnTouchUp);
@@ -623,8 +604,6 @@ class App {
   destroy() {
     window.cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.boundOnResize);
-    window.removeEventListener('mousewheel', this.boundOnWheel);
-    window.removeEventListener('wheel', this.boundOnWheel);
     window.removeEventListener('mousedown', this.boundOnTouchDown);
     window.removeEventListener('mousemove', this.boundOnTouchMove);
     window.removeEventListener('mouseup', this.boundOnTouchUp);
