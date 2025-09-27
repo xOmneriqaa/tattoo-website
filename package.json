@@ -1,11 +1,11 @@
 {
-  "name": "my-v0-project",
+  "name": "didemwebsite",
   "version": "0.1.0",
   "packageManager": "npm@11.6.0",
   "private": true,
   "scripts": {
-    "build": "next build",
-    "dev": "next dev",
+    "build": "next build --turbo",
+    "dev": "next dev --turbo",
     "lint": "next lint",
     "start": "next start"
   },

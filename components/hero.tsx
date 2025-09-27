@@ -56,7 +56,7 @@ export function Hero() {
               <div className="relative h-[200px] sm:h-[240px] md:h-[280px] lg:h-[320px] mb-6">
                 <ASCIIText
                   text="DIDEM_KARACA"
-                  asciiFontSize={3.2}
+                  asciiFontSize={3.8}
                   textFontSize={250}
                   textColor="#fdf9f3"
                   planeBaseHeight={6}
