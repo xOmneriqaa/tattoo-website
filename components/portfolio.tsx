@@ -58,7 +58,7 @@ export function Portfolio() {
           borderRadius={0.08}
           font="600 28px 'IBM Plex Mono'"
           scrollSpeed={1}
-          scrollEase={0.08}
+          scrollEase={0.15}
         />
       </div>
 
