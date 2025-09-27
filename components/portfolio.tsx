@@ -57,8 +57,8 @@ export function Portfolio() {
           textColor="#fdf9f3"
           borderRadius={0.08}
           font="600 28px 'IBM Plex Mono'"
-          scrollSpeed={1}
-          scrollEase={0.15}
+          scrollSpeed={2}
+          scrollEase={0.05}
         />
       </div>
 
