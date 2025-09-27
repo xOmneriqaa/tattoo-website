@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Inter, Playfair_Display } from "next/font/google"
+import { IBM_Plex_Mono, Inter, Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Suspense } from "react"
@@ -18,6 +18,13 @@ const inter = Inter({
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
+  display: "swap",
+})
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-mono",
   display: "swap",
 })
 
@@ -98,7 +105,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`relative min-h-screen blueprint-grid silky-texture font-sans ${inter.variable} ${playfair.variable} antialiased`}>
+      <body
+        className={`relative min-h-screen blueprint-grid silky-texture font-sans ${inter.variable} ${playfair.variable} ${plexMono.variable} antialiased`}
+      >
         <Suspense>
           {children}
           <Analytics />

@@ -1,5 +1,7 @@
 "use client"
 
+import DecryptedText from "@/components/DecryptedText"
+
 export function Contact() {
   return (
     <section id="contact" className="py-16 px-6 relative">
@@ -10,29 +12,71 @@ export function Contact() {
         <div className="grid gap-10 lg:grid-cols-5 items-center">
           <div className="lg:col-span-3 space-y-8">
             <div>
-              <span className="font-mono text-xs tracking-[0.4em] text-muted-foreground/60">BOOKING:</span>
+              <DecryptedText
+                text="BOOKING:"
+                parentClassName="font-mono text-xs tracking-[0.4em] text-muted-foreground/60"
+                className="text-muted-foreground/60"
+                encryptedClassName="text-muted-foreground/40"
+                animateOn="view"
+                sequential
+                useOriginalCharsOnly
+              />
             </div>
             <div>
               <h2 className="text-3xl md:text-5xl font-mono font-light text-foreground tracking-tight">
-                LET'S<span className="text-primary">_</span>TALK_INK
+                <DecryptedText
+                  text="LET'S_TALK_INK"
+                  parentClassName="block"
+                  animateOn="view"
+                  sequential
+                  useOriginalCharsOnly
+                />
               </h2>
-              <p className="mt-5 text-sm md:text-base font-mono text-muted-foreground leading-relaxed max-w-xl">
-                Share your concept, placement, and ideal timing. You'll hear back within 24 hours with next
-                steps and available dates.
-              </p>
+              <DecryptedText
+                text="Share your concept, placement, and ideal timing. You'll hear back within 24 hours with next steps and available dates."
+                parentClassName="block mt-5 text-sm md:text-base font-mono text-muted-foreground leading-relaxed max-w-xl"
+                encryptedClassName="text-muted-foreground/40"
+                animateOn="view"
+                sequential
+                useOriginalCharsOnly
+              />
             </div>
 
             <div className="flex items-start gap-6">
               <div className="mt-1 hidden sm:block h-16 w-px bg-gradient-to-b from-primary via-primary/20 to-transparent" />
               <ul className="space-y-3 font-mono text-xs uppercase tracking-wider text-muted-foreground/80">
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 bg-primary" aria-hidden="true" />Concept sketches included
+                  <span className="h-1.5 w-1.5 bg-primary" aria-hidden="true" />
+                  <DecryptedText
+                    text="Concept sketches included"
+                    parentClassName="inline-block"
+                    encryptedClassName="text-muted-foreground/40"
+                    animateOn="view"
+                    sequential
+                    useOriginalCharsOnly
+                  />
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 bg-primary" aria-hidden="true" />Fine line & microrealism focus
+                  <span className="h-1.5 w-1.5 bg-primary" aria-hidden="true" />
+                  <DecryptedText
+                    text="Fine line & microrealism focus"
+                    parentClassName="inline-block"
+                    encryptedClassName="text-muted-foreground/40"
+                    animateOn="view"
+                    sequential
+                    useOriginalCharsOnly
+                  />
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 bg-primary" aria-hidden="true" />Bespoke bookings only
+                  <span className="h-1.5 w-1.5 bg-primary" aria-hidden="true" />
+                  <DecryptedText
+                    text="Bespoke bookings only"
+                    parentClassName="inline-block"
+                    encryptedClassName="text-muted-foreground/40"
+                    animateOn="view"
+                    sequential
+                    useOriginalCharsOnly
+                  />
                 </li>
               </ul>
             </div>
@@ -44,14 +88,28 @@ export function Contact() {
                 rel="noopener noreferrer"
                 className="blueprint-btn px-8 py-3 rounded-none inline-flex items-center gap-3 text-xs uppercase tracking-wide"
               >
-                <span>DM @didemrs</span>
+                <DecryptedText
+                  text="DM @didemrs"
+                  parentClassName="inline-block"
+                  className="text-black"
+                  encryptedClassName="text-black/60"
+                  animateOn="view"
+                  sequential
+                  useOriginalCharsOnly
+                />
                 <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0-4 4m4-4H3" />
                 </svg>
               </a>
-              <span className="font-mono text-xs text-muted-foreground/70 uppercase tracking-widest">
-                Response time &lt; 24h
-              </span>
+              <DecryptedText
+                text={"Response time < 24h"}
+                parentClassName="font-mono text-xs text-muted-foreground/70 uppercase tracking-widest"
+                className="text-muted-foreground/70"
+                encryptedClassName="text-muted-foreground/40"
+                animateOn="view"
+                sequential
+                useOriginalCharsOnly
+              />
             </div>
           </div>
 
@@ -59,24 +117,65 @@ export function Contact() {
             <div className="hidden lg:block absolute -top-6 -left-8 h-16 w-16 border border-primary/10" aria-hidden="true" />
             <div className="space-y-6">
               <div className="blueprint-card rounded-none p-6 shadow-lg shadow-primary/10">
-                <div className="font-mono text-xs text-muted-foreground/60 tracking-widest mb-3">STUDIO</div>
-                <p className="text-sm font-mono text-muted-foreground/90 leading-relaxed">
-                  Istanbul Tattoo Loft<br />
-                  Beyoğlu, Istanbul, Türkiye
-                </p>
-                <p className="mt-4 text-[11px] font-mono uppercase tracking-[0.4em] text-primary/80">
-                  By appointment only
-                </p>
+                <div className="font-mono text-xs text-muted-foreground/60 tracking-widest mb-3">
+                  <DecryptedText
+                    text="STUDIO"
+                    parentClassName=""
+                    className="text-muted-foreground/60"
+                    encryptedClassName="text-muted-foreground/40"
+                    animateOn="view"
+                    sequential
+                    useOriginalCharsOnly
+                  />
+                </div>
+                <DecryptedText
+                  text={"Istanbul Tattoo Loft\nBeyoğlu, Istanbul, Türkiye"}
+                  parentClassName="block text-sm font-mono text-muted-foreground/90 leading-relaxed whitespace-pre-line"
+                  encryptedClassName="text-muted-foreground/40"
+                  animateOn="view"
+                  sequential
+                  useOriginalCharsOnly
+                />
+                <DecryptedText
+                  text="By appointment only"
+                  parentClassName="block mt-4 text-[11px] font-mono uppercase tracking-[0.4em] text-primary/80"
+                  encryptedClassName="text-primary/40"
+                  animateOn="view"
+                  sequential
+                  useOriginalCharsOnly
+                />
               </div>
 
               <div className="blueprint-card rounded-none p-6 translate-x-6">
-                <div className="font-mono text-xs text-muted-foreground/60 tracking-widest mb-3">SCHEDULE</div>
-                <p className="text-sm font-mono text-muted-foreground/90 leading-relaxed">
-                  Tuesday – Saturday<br />10:00 – 19:00 (GMT+3)
-                </p>
+                <div className="font-mono text-xs text-muted-foreground/60 tracking-widest mb-3">
+                  <DecryptedText
+                    text="SCHEDULE"
+                    parentClassName=""
+                    className="text-muted-foreground/60"
+                    encryptedClassName="text-muted-foreground/40"
+                    animateOn="view"
+                    sequential
+                    useOriginalCharsOnly
+                  />
+                </div>
+                <DecryptedText
+                  text={"Tuesday – Saturday\n10:00 – 19:00 (GMT+3)"}
+                  parentClassName="block text-sm font-mono text-muted-foreground/90 leading-relaxed whitespace-pre-line"
+                  encryptedClassName="text-muted-foreground/40"
+                  animateOn="view"
+                  sequential
+                  useOriginalCharsOnly
+                />
                 <div className="mt-4 flex items-center gap-3 text-xs font-mono text-muted-foreground/70 uppercase tracking-widest">
                   <span className="h-1.5 w-1.5 bg-primary" aria-hidden="true" />
-                  Free consultations via DM
+                  <DecryptedText
+                    text="Free consultations via DM"
+                    parentClassName="inline-block"
+                    encryptedClassName="text-muted-foreground/40"
+                    animateOn="view"
+                    sequential
+                    useOriginalCharsOnly
+                  />
                 </div>
               </div>
             </div>
