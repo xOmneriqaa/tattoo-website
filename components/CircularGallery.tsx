@@ -465,7 +465,7 @@ class App {
         ? window.matchMedia('(pointer: coarse)').matches
         : false;
     this.dragMultiplierPointer = this.scrollSpeed * 0.025;
-    this.dragMultiplierTouch = this.scrollSpeed * (this.isCoarsePointer ? 0.07 : 0.05);
+    this.dragMultiplierTouch = this.scrollSpeed * (this.isCoarsePointer ? 0.06 : 0.045);
     this.activeDragMultiplier = this.dragMultiplierPointer;
     if (this.isCoarsePointer) {
       this.autoScrollSpeed = autoScrollSpeed * 0.6;
@@ -773,7 +773,7 @@ class App {
     if (!this.medias || this.medias.length === 0) return target;
     const itemWidth = this.medias[0].width || 1;
     const maxDeltaBase = itemWidth * 6;
-    const maxDelta = this.lastPointerWasTouch ? itemWidth * 10 : maxDeltaBase;
+    const maxDelta = this.lastPointerWasTouch ? itemWidth * 8 : maxDeltaBase;
     const delta = target - reference;
     if (delta > maxDelta) return reference + maxDelta;
     if (delta < -maxDelta) return reference - maxDelta;
