@@ -12,6 +12,7 @@ const ASCIIText = dynamic(() => import("@/components/ASCIIText"), {
 export function Hero() {
   const [isVisible, setIsVisible] = useState(false)
   const [shouldRenderAscii, setShouldRenderAscii] = useState(false)
+  const [asciiMode, setAsciiMode] = useState<"full" | "lite">("full")
 
   useEffect(() => {
     setIsVisible(true)
@@ -23,6 +24,9 @@ export function Hero() {
     }
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const isSmallScreen = window.matchMedia("(max-width: 768px)").matches
+
+    setAsciiMode(isSmallScreen ? "lite" : "full")
 
     if (prefersReducedMotion) {
       return
@@ -39,15 +43,42 @@ export function Hero() {
 
     ;(ASCIIText as typeof ASCIIText & { preload?: () => void }).preload?.()
 
-    const rafHandle = window.requestAnimationFrame(enable)
-    const timeoutHandle = window.setTimeout(enable, 300)
+    type RequestIdleCallback = (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+    type CancelIdleCallback = (handle: number) => void
+
+    const { requestIdleCallback, cancelIdleCallback } = window as typeof window & {
+      requestIdleCallback?: RequestIdleCallback
+      cancelIdleCallback?: CancelIdleCallback
+    }
+
+    let idleHandle: number | null = null
+    const timeoutDelay = isSmallScreen ? 1200 : 800
+    let timeoutHandle: number | null = window.setTimeout(enable, timeoutDelay)
+
+    if (requestIdleCallback) {
+      idleHandle = requestIdleCallback(() => {
+        enable()
+        if (timeoutHandle !== null) {
+          window.clearTimeout(timeoutHandle)
+          timeoutHandle = null
+        }
+      }, { timeout: isSmallScreen ? 1600 : 1200 })
+    }
 
     return () => {
       cancelled = true
-      window.cancelAnimationFrame(rafHandle)
-      window.clearTimeout(timeoutHandle)
+      if (timeoutHandle !== null) {
+        window.clearTimeout(timeoutHandle)
+      }
+      if (idleHandle !== null && cancelIdleCallback) {
+        cancelIdleCallback(idleHandle)
+      }
     }
   }, [])
+
+  const asciiConfig = asciiMode === "lite"
+    ? { asciiFontSize: 4, textFontSize: 240, planeBaseHeight: 5.2, enableWaves: false as const }
+    : { asciiFontSize: 3.8, textFontSize: 250, planeBaseHeight: 6, enableWaves: true as const }
 
   return (
     <section className="min-h-screen flex items-center px-6 relative overflow-hidden">
@@ -94,11 +125,11 @@ export function Hero() {
                 {shouldRenderAscii ? (
                   <ASCIIText
                     text="DIDEM_KARACA"
-                    asciiFontSize={3.8}
-                    textFontSize={250}
+                    asciiFontSize={asciiConfig.asciiFontSize}
+                    textFontSize={asciiConfig.textFontSize}
                     textColor="#fdf9f3"
-                    planeBaseHeight={6}
-                    enableWaves
+                    planeBaseHeight={asciiConfig.planeBaseHeight}
+                    enableWaves={asciiConfig.enableWaves}
                     containerStyle={{
                       width: "min(100vw, 68rem)",
                       left: "50%",

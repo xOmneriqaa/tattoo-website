@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useEffect, useState } from "react"
 
 import DecryptedText from "@/components/DecryptedText"
@@ -182,11 +183,13 @@ export function About() {
               }`}
             >
               <div className="blueprint-card rounded-none p-4 max-w-sm ml-auto lg:ml-8">
-                <div className="aspect-[4/5] overflow-hidden">
-                  <img
+                <div className="aspect-[4/5] overflow-hidden relative">
+                  <Image
                     src="/didem-karaca-tattoo-artist-portrait.jpg"
                     alt="Didem Karaca - Tattoo Artist"
-                    className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
+                    fill
+                    className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
+                    sizes="(min-width: 1024px) 18rem, 80vw"
                   />
                 </div>
                 <div className="mt-4 font-mono text-xs text-muted-foreground/60">

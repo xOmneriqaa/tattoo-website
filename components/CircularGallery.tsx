@@ -5,11 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 
 type GL = Renderer['gl'];
 
-function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
+function debounce<T extends (...args: unknown[]) => void>(func: T, wait: number): T {
   let timeout: number;
-  return function (this: any, ...args: Parameters<T>) {
+  return function (...args: Parameters<T>) {
     if (timeout) window.clearTimeout(timeout);
-    timeout = window.setTimeout(() => func.apply(this, args), wait);
+    timeout = window.setTimeout(() => func(...args), wait);
   } as T;
 }
 
@@ -17,12 +17,21 @@ function lerp(p1: number, p2: number, t: number): number {
   return p1 + (p2 - p1) * t;
 }
 
-function autoBind(instance: any): void {
-  const proto = Object.getPrototypeOf(instance);
+type BindableInstance = Record<string, unknown>;
+
+function autoBind<T extends BindableInstance>(instance: T): void {
+  const proto = Object.getPrototypeOf(instance) as BindableInstance;
   Object.getOwnPropertyNames(proto).forEach(key => {
-    if (key !== 'constructor' && typeof instance[key] === 'function') {
-      instance[key] = instance[key].bind(instance);
+    const descriptor = Object.getOwnPropertyDescriptor(proto, key);
+    const value = descriptor?.value;
+    if (key === 'constructor' || typeof value !== 'function') {
+      return;
     }
+
+    Object.defineProperty(instance, key, {
+      ...descriptor,
+      value: (value as (...args: unknown[]) => unknown).bind(instance)
+    });
   });
 }
 
@@ -405,7 +414,7 @@ class App {
     last: number;
     position?: number;
   };
-  onCheckDebounce!: (...args: any[]) => void;
+  onCheckDebounce!: () => void;
   renderer!: Renderer;
   gl!: GL;
   camera!: Camera;
@@ -828,7 +837,9 @@ class App {
     if (!isInside) {
       return;
     }
-    const delta = wheelEvent.deltaY || (wheelEvent as any).wheelDelta || (wheelEvent as any).detail;
+    type LegacyWheelEvent = WheelEvent & { wheelDelta?: number; detail?: number };
+    const legacyEvent = wheelEvent as LegacyWheelEvent;
+    const delta = wheelEvent.deltaY || legacyEvent.wheelDelta || legacyEvent.detail || 0;
     const base = this.scroll.target;
     const rawTarget = base + (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
     this.scroll.target = this.clampTarget(rawTarget, this.scroll.current);
@@ -957,8 +968,10 @@ export default function CircularGallery({
         if (entry.isIntersecting) {
           if (!shouldInit) {
             const triggerInit = () => setShouldInit(true);
-            if ('requestIdleCallback' in window) {
-              (window as any).requestIdleCallback(triggerInit, { timeout: 750 });
+            type RequestIdleCallback = (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+            const idleWindow = window as typeof window & { requestIdleCallback?: RequestIdleCallback };
+            if (idleWindow.requestIdleCallback) {
+              idleWindow.requestIdleCallback(triggerInit, { timeout: 750 });
             } else {
               window.requestAnimationFrame(triggerInit);
             }
