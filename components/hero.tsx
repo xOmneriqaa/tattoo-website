@@ -1,15 +1,53 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
 
-import ASCIIText from "@/components/ASCIIText"
 import DecryptedText from "@/components/DecryptedText"
+
+const ASCIIText = dynamic(() => import("@/components/ASCIIText"), {
+  ssr: false,
+})
 
 export function Hero() {
   const [isVisible, setIsVisible] = useState(false)
+  const [shouldRenderAscii, setShouldRenderAscii] = useState(false)
 
   useEffect(() => {
     setIsVisible(true)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const isLargeScreen = window.matchMedia("(min-width: 1024px)").matches
+
+    if (prefersReducedMotion || !isLargeScreen) {
+      return
+    }
+
+    let cancelled = false
+
+    const enable = () => {
+      if (!cancelled) {
+        setShouldRenderAscii(true)
+        cancelled = true
+      }
+    }
+
+    ;(ASCIIText as typeof ASCIIText & { preload?: () => void }).preload?.()
+
+    const rafHandle = window.requestAnimationFrame(enable)
+    const timeoutHandle = window.setTimeout(enable, 300)
+
+    return () => {
+      cancelled = true
+      window.cancelAnimationFrame(rafHandle)
+      window.clearTimeout(timeoutHandle)
+    }
   }, [])
 
   return (
@@ -54,21 +92,27 @@ export function Hero() {
                 />
               </div>
               <div className="relative h-[200px] sm:h-[240px] md:h-[280px] lg:h-[320px] mb-6">
-                <ASCIIText
-                  text="DIDEM_KARACA"
-                  asciiFontSize={3.8}
-                  textFontSize={250}
-                  textColor="#fdf9f3"
-                  planeBaseHeight={6}
-                  enableWaves
-                  containerStyle={{
-                    width: 'min(100vw, 68rem)',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    top: 0,
-                    height: '100%'
-                  }}
-                />
+                {shouldRenderAscii ? (
+                  <ASCIIText
+                    text="DIDEM_KARACA"
+                    asciiFontSize={3.8}
+                    textFontSize={250}
+                    textColor="#fdf9f3"
+                    planeBaseHeight={6}
+                    enableWaves
+                    containerStyle={{
+                      width: "min(100vw, 68rem)",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      top: 0,
+                      height: "100%",
+                    }}
+                  />
+                ) : (
+                  <span aria-hidden="true" className="pointer-events-none select-none opacity-0">
+                    DIDEM_KARACA
+                  </span>
+                )}
                 <h1 className="sr-only">DIDEM_KARACA</h1>
               </div>
               <div className="flex items-center gap-4 mb-6">
@@ -107,8 +151,8 @@ export function Hero() {
                   <DecryptedText
                     text="CONNECT_VIA_INSTAGRAM"
                     parentClassName="inline-block text-xs uppercase tracking-wide"
-                    className="text-black"
-                    encryptedClassName="text-black/60"
+                    className="text-[#f5f7ff]"
+                    encryptedClassName="text-[#f5f7ff]/70"
                     animateOn="view"
                     sequential
                     useOriginalCharsOnly

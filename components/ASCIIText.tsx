@@ -1,5 +1,9 @@
+"use client"
+
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
+
+import { plexMonoFontStack } from '@/lib/fonts';
 
 const vertexShader = `
 varying vec2 vUv;
@@ -86,7 +90,8 @@ class AsciiFilter {
     this.domElement.appendChild(this.pre);
 
     this.canvas = document.createElement('canvas');
-    this.context = this.canvas.getContext('2d');
+    this.context =
+      this.canvas.getContext('2d', { willReadFrequently: true }) ?? this.canvas.getContext('2d');
     this.domElement.appendChild(this.canvas);
 
     this.deg = 0;
@@ -331,7 +336,7 @@ class CanvAscii {
   setMesh() {
     this.textCanvas = new CanvasTxt(this.textString, {
       fontSize: this.textFontSize,
-      fontFamily: 'IBM Plex Mono',
+      fontFamily: plexMonoFontStack,
       color: this.textColor
     });
     this.textCanvas.resize();
@@ -368,7 +373,7 @@ class CanvAscii {
     this.renderer.setClearColor(0x000000, 0);
 
     this.filter = new AsciiFilter(this.renderer, {
-      fontFamily: 'IBM Plex Mono',
+      fontFamily: plexMonoFontStack,
       fontSize: this.asciiFontSize,
       invert: true
     });

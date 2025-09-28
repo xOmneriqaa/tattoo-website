@@ -1,32 +1,15 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { IBM_Plex_Mono, Inter, Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import "./globals.css"
 import { Suspense } from "react"
+
+import { inter, playfair, plexMono } from "@/lib/fonts"
+
+import "./globals.css"
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://didemkaraca.com"
 const metadataBase = new URL(siteUrl)
 const primaryOgImage = "/didem-karaca-tattoo-artist-portrait.jpg"
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-})
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-  display: "swap",
-})
-
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-mono",
-  display: "swap",
-})
 
 export const metadata: Metadata = {
   metadataBase,

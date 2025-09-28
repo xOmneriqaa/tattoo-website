@@ -2,23 +2,26 @@
 
 import CircularGallery from "@/components/CircularGallery"
 import DecryptedText from "@/components/DecryptedText"
+import { plexMonoFontStack } from "@/lib/fonts"
 
-const whatsappImages = [
-  "WhatsApp Image 2025-09-26 at 22.41.45.jpeg",
-  "WhatsApp Image 2025-09-26 at 22.41.45 (1).jpeg",
-  "WhatsApp Image 2025-09-26 at 22.41.45 (2).jpeg",
-  "WhatsApp Image 2025-09-26 at 22.41.45 (3).jpeg",
-  "WhatsApp Image 2025-09-26 at 22.41.46.jpeg",
-  "WhatsApp Image 2025-09-26 at 22.41.46 (1).jpeg",
-  "WhatsApp Image 2025-09-26 at 22.41.46 (2).jpeg",
-  "WhatsApp Image 2025-09-26 at 22.41.47.jpeg",
-  "WhatsApp Image 2025-09-26 at 22.41.48.jpeg",
-  "WhatsApp Image 2025-09-26 at 22.41.50.jpeg",
-  "WhatsApp Image 2025-09-26 at 22.41.50 (1).jpeg",
+const WHATSAPP_IMAGE_EXTENSION = "avif" as const
+
+const whatsappImageBaseNames = [
+  "WhatsApp Image 2025-09-26 at 22.41.45",
+  "WhatsApp Image 2025-09-26 at 22.41.45 (1)",
+  "WhatsApp Image 2025-09-26 at 22.41.45 (2)",
+  "WhatsApp Image 2025-09-26 at 22.41.45 (3)",
+  "WhatsApp Image 2025-09-26 at 22.41.46",
+  "WhatsApp Image 2025-09-26 at 22.41.46 (1)",
+  "WhatsApp Image 2025-09-26 at 22.41.46 (2)",
+  "WhatsApp Image 2025-09-26 at 22.41.47",
+  "WhatsApp Image 2025-09-26 at 22.41.48",
+  "WhatsApp Image 2025-09-26 at 22.41.50",
+  "WhatsApp Image 2025-09-26 at 22.41.50 (1)",
 ] as const
 
-const galleryItems = whatsappImages.map((fileName, index) => ({
-  image: `/${encodeURI(fileName)}`,
+const galleryItems = whatsappImageBaseNames.map(fileName => ({
+  image: `/${encodeURI(`${fileName}.${WHATSAPP_IMAGE_EXTENSION}`)}`,
   text: "",
 }))
 
@@ -56,7 +59,7 @@ export function Portfolio() {
           bend={2}
           textColor="#fdf9f3"
           borderRadius={0.08}
-          font="600 28px 'IBM Plex Mono'"
+          font={`600 28px ${plexMonoFontStack}`}
           scrollSpeed={2}
           scrollEase={0.05}
           autoScrollSpeed={0.01}
@@ -74,8 +77,8 @@ export function Portfolio() {
             <DecryptedText
               text="MORE_ON_INSTAGRAM"
               parentClassName="inline-block"
-              className="text-black"
-              encryptedClassName="text-black/60"
+              className="text-[#f5f7ff]"
+              encryptedClassName="text-[#f5f7ff]/70"
               animateOn="view"
               sequential
               useOriginalCharsOnly

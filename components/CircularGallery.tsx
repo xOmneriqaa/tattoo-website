@@ -1,10 +1,17 @@
 "use client"
 
 import { Camera, Mesh, Plane, Program, Renderer, Texture, Transform } from 'ogl';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type GL = Renderer['gl'];
 
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
+  let timeout: number;
+  return function (this: any, ...args: Parameters<T>) {
+    if (timeout) window.clearTimeout(timeout);
+    timeout = window.setTimeout(() => func.apply(this, args), wait);
+  } as T;
+}
 
 function lerp(p1: number, p2: number, t: number): number {
   return p1 + (p2 - p1) * t;
@@ -145,6 +152,7 @@ interface MediaProps {
   renderer: Renderer;
   scene: Transform;
   screen: ScreenSize;
+  imageSrc: string;
   text: string;
   viewport: Viewport;
   bend: number;
@@ -163,6 +171,7 @@ class Media {
   renderer: Renderer;
   scene: Transform;
   screen: ScreenSize;
+  imageSrc: string;
   text: string;
   viewport: Viewport;
   bend: number;
@@ -180,6 +189,7 @@ class Media {
   isBefore: boolean = false;
   isAfter: boolean = false;
   textureInfo: LoadedTexture;
+  imageSrc: string;
 
   constructor({
     geometry,
@@ -195,6 +205,7 @@ class Media {
     textColor,
     borderRadius = 0,
     font,
+    imageSrc,
     textureInfo
   }: MediaProps) {
     this.geometry = geometry;
@@ -204,6 +215,7 @@ class Media {
     this.renderer = renderer;
     this.scene = scene;
     this.screen = screen;
+    this.imageSrc = imageSrc;
     this.text = text;
     this.viewport = viewport;
     this.bend = bend;
@@ -217,6 +229,18 @@ class Media {
       this.createTitle();
     }
     this.onResize();
+  }
+
+  updateTexture(textureInfo: LoadedTexture) {
+    this.textureInfo = textureInfo;
+    const { texture, size } = textureInfo;
+    if (this.program && this.program.uniforms) {
+      texture.needsUpdate = true;
+      this.program.uniforms.tMap.value = texture;
+      if (this.program.uniforms.uImageSizes) {
+        this.program.uniforms.uImageSizes.value = size;
+      }
+    }
   }
 
   createShader() {
@@ -381,6 +405,7 @@ class App {
     last: number;
     position?: number;
   };
+  onCheckDebounce!: (...args: any[]) => void;
   renderer!: Renderer;
   gl!: GL;
   camera!: Camera;
@@ -427,6 +452,7 @@ class App {
     this.wheelEnabled = wheelEnabled;
     this.autoScrollSpeed = autoScrollSpeed;
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
+    this.onCheckDebounce = debounce(this.onCheck.bind(this), 200);
     this.createRenderer();
     this.createCamera();
     this.createScene();
@@ -466,9 +492,27 @@ class App {
 
   createGeometry() {
     this.planeGeometry = new Plane(this.gl, {
-      heightSegments: 50,
-      widthSegments: 100
+      heightSegments: 24,
+      widthSegments: 48
     });
+  }
+
+  private createPlaceholderTexture(): LoadedTexture {
+    const texture = new Texture(this.gl, { generateMipmaps: false });
+    texture.minFilter = this.gl.LINEAR;
+    texture.magFilter = this.gl.LINEAR;
+    texture.wrapS = this.gl.CLAMP_TO_EDGE;
+    texture.wrapT = this.gl.CLAMP_TO_EDGE;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 2;
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.fillStyle = '#191919';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    texture.image = canvas;
+    texture.needsUpdate = true;
+    return { texture, size: [canvas.width, canvas.height] };
   }
 
   // Preload and reuse textures to eliminate duplicate GPU uploads.
@@ -483,6 +527,8 @@ class App {
       texture.wrapS = this.gl.CLAMP_TO_EDGE;
       texture.wrapT = this.gl.CLAMP_TO_EDGE;
 
+      const MAX_DIMENSION = 1280;
+
       const image = new Image();
       if (/^https?:/i.test(imageSrc)) {
         image.crossOrigin = 'anonymous';
@@ -496,8 +542,29 @@ class App {
         resolve({ texture, size: [width || 1, height || 1] });
       };
 
+      const prepareSource = (source: HTMLImageElement | HTMLCanvasElement) => {
+        const naturalWidth = (source as HTMLImageElement).naturalWidth || source.width;
+        const naturalHeight = (source as HTMLImageElement).naturalHeight || source.height;
+        const maxSide = Math.max(naturalWidth, naturalHeight);
+        if (maxSide <= MAX_DIMENSION) {
+          return { drawable: source, width: naturalWidth || source.width, height: naturalHeight || source.height };
+        }
+        const scale = MAX_DIMENSION / maxSide;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(naturalHeight * scale));
+        const context = canvas.getContext('2d');
+        if (context) {
+          context.drawImage(source, 0, 0, canvas.width, canvas.height);
+        }
+        return { drawable: canvas, width: canvas.width, height: canvas.height };
+      };
+
       image.onload = () => {
-        const finalize = () => commit(image, image.naturalWidth || image.width, image.naturalHeight || image.height);
+        const finalize = () => {
+          const { drawable, width, height } = prepareSource(image);
+          commit(drawable, width, height);
+        };
         const decoder = (image as HTMLImageElement & { decode?: () => Promise<void> }).decode;
         if (decoder) {
           decoder.call(image).then(finalize).catch(() => finalize());
@@ -583,21 +650,11 @@ class App {
     ];
     const galleryItems = items && items.length ? items : defaultItems;
     this.mediasImages = galleryItems.concat(galleryItems);
-    const uniqueImages = Array.from(new Set(this.mediasImages.map(item => item.image)));
-    const textureEntries = await Promise.all(
-      uniqueImages.map(async imageSrc => {
-        const textureInfo = await this.loadTexture(imageSrc);
-        return [imageSrc, textureInfo] as const;
-      })
-    );
 
-    if (this.isDestroyed) return;
+    const placeholderInfo = this.createPlaceholderTexture();
 
-    const textureMap = new Map<string, LoadedTexture>(textureEntries);
-
-    this.medias = this.mediasImages.map((data, index) => {
-      const textureInfo = textureMap.get(data.image)!;
-      return new Media({
+    this.medias = this.mediasImages.map((data, index) =>
+      new Media({
         geometry: this.planeGeometry,
         gl: this.gl,
         index,
@@ -605,15 +662,16 @@ class App {
         renderer: this.renderer,
         scene: this.scene,
         screen: this.screen,
+        imageSrc: data.image,
         text: data.text,
         viewport: this.viewport,
         bend,
         textColor,
         borderRadius,
         font,
-        textureInfo
-      });
-    });
+        textureInfo: placeholderInfo
+      })
+    );
 
     this.onResize();
     this.medias.forEach(media => media.update(this.scroll, 'right'));
@@ -625,6 +683,82 @@ class App {
       this.hasStartedLoop = true;
       this.update();
     }
+
+    const uniqueImages = Array.from(new Set(this.mediasImages.map(item => item.image)));
+
+    const eagerCount = Math.min(uniqueImages.length, 5);
+    const eagerImages = uniqueImages.slice(0, eagerCount);
+
+    if (eagerImages.length > 0) {
+      await Promise.all(
+        eagerImages.map(async imageSrc => {
+          const textureInfo = await this.loadTexture(imageSrc);
+          if (this.isDestroyed) return;
+
+          this.medias
+            .filter(media => media.imageSrc === imageSrc)
+            .forEach(media => media.updateTexture(textureInfo));
+        })
+      );
+
+      if (!this.isDestroyed) {
+        this.renderer.render({ scene: this.scene, camera: this.camera });
+      }
+    }
+
+    const remainingImages = uniqueImages.slice(eagerCount);
+
+    const schedule = (cb: () => void) => {
+      if (typeof window === 'undefined') {
+        cb();
+        return;
+      }
+      window.requestAnimationFrame(() => cb());
+    };
+
+    if (remainingImages.length > 0) {
+      let nextIndex = 0;
+      let active = 0;
+      const maxConcurrent = Math.min(3, remainingImages.length);
+
+      const pump = () => {
+        if (this.isDestroyed) return;
+        while (active < maxConcurrent && nextIndex < remainingImages.length) {
+          const imageSrc = remainingImages[nextIndex++];
+          active += 1;
+
+          const loadAndApply = async () => {
+            try {
+              const textureInfo = await this.loadTexture(imageSrc);
+              if (this.isDestroyed) return;
+
+              this.medias
+                .filter(media => media.imageSrc === imageSrc)
+                .forEach(media => media.updateTexture(textureInfo));
+
+              this.renderer.render({ scene: this.scene, camera: this.camera });
+            } finally {
+              active -= 1;
+              schedule(pump);
+            }
+          };
+
+          void loadAndApply();
+        }
+      };
+
+      schedule(pump);
+    }
+  }
+
+  private clampTarget(target: number, reference: number = this.scroll.current): number {
+    if (!this.medias || this.medias.length === 0) return target;
+    const itemWidth = this.medias[0].width || 1;
+    const maxDelta = itemWidth * 6;
+    const delta = target - reference;
+    if (delta > maxDelta) return reference + maxDelta;
+    if (delta < -maxDelta) return reference - maxDelta;
+    return target;
   }
 
   onTouchDown(e: MouseEvent | TouchEvent) {
@@ -637,7 +771,8 @@ class App {
     if (!this.isDown) return;
     const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const distance = (this.start - x) * (this.scrollSpeed * 0.025);
-    this.scroll.target = (this.scroll.position ?? 0) + distance;
+    const base = this.scroll.position ?? 0;
+    this.scroll.target = this.clampTarget(base + distance, base);
   }
 
   onTouchUp() {
@@ -669,7 +804,9 @@ class App {
       return;
     }
     const delta = wheelEvent.deltaY || (wheelEvent as any).wheelDelta || (wheelEvent as any).detail;
-    this.scroll.target += (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
+    const base = this.scroll.target;
+    const rawTarget = base + (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
+    this.scroll.target = this.clampTarget(rawTarget, this.scroll.current);
     this.onCheckDebounce();
   }
 
@@ -701,7 +838,7 @@ class App {
 
   update() {
     if (!this.isDown && !this.isHover && this.autoScrollSpeed !== 0) {
-      this.scroll.target += this.autoScrollSpeed;
+      this.scroll.target = this.clampTarget(this.scroll.target + this.autoScrollSpeed);
     }
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
     const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
@@ -774,8 +911,45 @@ export default function CircularGallery({
   autoScrollSpeed = 0.01
 }: CircularGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<App | null>(null);
+  const [shouldInit, setShouldInit] = useState(false);
+
   useEffect(() => {
-    if (!containerRef.current) return;
+    const node = containerRef.current;
+    if (!node) return;
+
+    if (shouldInit) {
+      return;
+    }
+
+    if (!('IntersectionObserver' in window)) {
+      setShouldInit(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          if (!shouldInit) {
+            const triggerInit = () => setShouldInit(true);
+            if ('requestIdleCallback' in window) {
+              (window as any).requestIdleCallback(triggerInit, { timeout: 750 });
+            } else {
+              window.requestAnimationFrame(triggerInit);
+            }
+          }
+          observer.disconnect();
+        }
+      });
+    }, { threshold: 0, rootMargin: '300px 0px' });
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldInit]);
+
+  useEffect(() => {
+    if (!shouldInit || !containerRef.current) return;
+
     const app = new App(containerRef.current, {
       items,
       bend,
@@ -787,9 +961,13 @@ export default function CircularGallery({
       wheelEnabled,
       autoScrollSpeed
     });
+    appRef.current = app;
+
     return () => {
       app.destroy();
+      appRef.current = null;
     };
-  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, wheelEnabled, autoScrollSpeed]);
+  }, [shouldInit, items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, wheelEnabled, autoScrollSpeed]);
+
   return <div className="w-full h-full overflow-hidden cursor-grab active:cursor-grabbing" ref={containerRef} />;
 }

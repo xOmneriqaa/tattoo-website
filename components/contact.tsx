@@ -91,8 +91,8 @@ export function Contact() {
                 <DecryptedText
                   text="DM @didemrs"
                   parentClassName="inline-block"
-                  className="text-black"
-                  encryptedClassName="text-black/60"
+                  className="text-[#f5f7ff]"
+                  encryptedClassName="text-[#f5f7ff]/70"
                   animateOn="view"
                   sequential
                   useOriginalCharsOnly
