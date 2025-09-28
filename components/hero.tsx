@@ -77,7 +77,7 @@ export function Hero() {
   }, [])
 
   const asciiConfig = asciiMode === "lite"
-    ? { asciiFontSize: 4, textFontSize: 240, planeBaseHeight: 5.2, enableWaves: false as const }
+    ? { asciiFontSize: 3.6, textFontSize: 270, planeBaseHeight: 5.6, enableWaves: true as const }
     : { asciiFontSize: 3.8, textFontSize: 250, planeBaseHeight: 6, enableWaves: true as const }
 
   return (
