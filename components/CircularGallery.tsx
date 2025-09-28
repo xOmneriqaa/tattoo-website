@@ -55,6 +55,11 @@ function createTextTexture(
   return { texture, width: canvas.width, height: canvas.height };
 }
 
+interface LoadedTexture {
+  texture: Texture;
+  size: [number, number];
+}
+
 interface TitleProps {
   gl: GL;
   plane: Mesh;
@@ -135,7 +140,6 @@ interface Viewport {
 interface MediaProps {
   geometry: Plane;
   gl: GL;
-  image: string;
   index: number;
   length: number;
   renderer: Renderer;
@@ -147,13 +151,13 @@ interface MediaProps {
   textColor: string;
   borderRadius?: number;
   font?: string;
+  textureInfo: LoadedTexture;
 }
 
 class Media {
   extra: number = 0;
   geometry: Plane;
   gl: GL;
-  image: string;
   index: number;
   length: number;
   renderer: Renderer;
@@ -175,11 +179,11 @@ class Media {
   x!: number;
   isBefore: boolean = false;
   isAfter: boolean = false;
+  textureInfo: LoadedTexture;
 
   constructor({
     geometry,
     gl,
-    image,
     index,
     length,
     renderer,
@@ -190,11 +194,11 @@ class Media {
     bend,
     textColor,
     borderRadius = 0,
-    font
+    font,
+    textureInfo
   }: MediaProps) {
     this.geometry = geometry;
     this.gl = gl;
-    this.image = image;
     this.index = index;
     this.length = length;
     this.renderer = renderer;
@@ -206,6 +210,7 @@ class Media {
     this.textColor = textColor;
     this.borderRadius = borderRadius;
     this.font = font;
+    this.textureInfo = textureInfo;
     this.createShader();
     this.createMesh();
     if (this.text) {
@@ -215,9 +220,7 @@ class Media {
   }
 
   createShader() {
-    const texture = new Texture(this.gl, {
-      generateMipmaps: true
-    });
+    const { texture, size } = this.textureInfo;
     this.program = new Program(this.gl, {
       depthTest: false,
       depthWrite: false,
@@ -269,18 +272,13 @@ class Media {
       uniforms: {
         tMap: { value: texture },
         uPlaneSizes: { value: [0, 0] },
-        uImageSizes: { value: [0, 0] },
+        uImageSizes: { value: size },
+        uSpeed: { value: 0 },
+        uTime: { value: 100 * Math.random() },
         uBorderRadius: { value: this.borderRadius }
       },
       transparent: true
     });
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = this.image;
-    img.onload = () => {
-      texture.image = img;
-      this.program.uniforms.uImageSizes.value = [img.naturalWidth, img.naturalHeight];
-    };
   }
 
   createMesh() {
@@ -367,11 +365,15 @@ interface AppConfig {
   font?: string;
   scrollSpeed?: number;
   scrollEase?: number;
+  wheelEnabled?: boolean;
+  autoScrollSpeed?: number;
 }
 
 class App {
   container: HTMLElement;
   scrollSpeed: number;
+  wheelEnabled: boolean;
+  autoScrollSpeed: number;
   scroll: {
     ease: number;
     current: number;
@@ -386,17 +388,24 @@ class App {
   planeGeometry!: Plane;
   medias: Media[] = [];
   mediasImages: { image: string; text: string }[] = [];
+  // Cache pending texture promises so each asset is decoded only once.
+  textureCache: Map<string, Promise<LoadedTexture>> = new Map();
   screen!: { width: number; height: number };
   viewport!: { width: number; height: number };
   raf: number = 0;
+  isDestroyed: boolean = false;
+  hasStartedLoop: boolean = false;
 
   boundOnResize!: () => void;
   boundOnTouchDown!: (e: MouseEvent | TouchEvent) => void;
   boundOnTouchMove!: (e: MouseEvent | TouchEvent) => void;
   boundOnTouchUp!: () => void;
+  boundOnPointerEnter!: () => void;
+  boundOnPointerLeave!: () => void;
 
   isDown: boolean = false;
   start: number = 0;
+  isHover: boolean = false;
 
   constructor(
     container: HTMLElement,
@@ -407,32 +416,42 @@ class App {
       borderRadius = 0,
       font = 'bold 30px Figtree',
       scrollSpeed = 2,
-      scrollEase = 0.05
+      scrollEase = 0.05,
+      wheelEnabled = false,
+      autoScrollSpeed = 0.01
     }: AppConfig
   ) {
     document.documentElement.classList.remove('no-js');
     this.container = container;
     this.scrollSpeed = scrollSpeed;
+    this.wheelEnabled = wheelEnabled;
+    this.autoScrollSpeed = autoScrollSpeed;
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
     this.createRenderer();
     this.createCamera();
     this.createScene();
     this.onResize();
     this.createGeometry();
-    this.createMedias(items, bend, textColor, borderRadius, font);
-    this.update();
     this.addEventListeners();
+    this.update = this.update.bind(this);
+    requestAnimationFrame(() => this.renderer.render({ scene: this.scene, camera: this.camera }));
+    void this.createMedias(items, bend, textColor, borderRadius, font);
   }
 
   createRenderer() {
+    const maxDpr = 1.5; // Cap DPR to keep fragment shading under control on retina screens.
     this.renderer = new Renderer({
       alpha: true,
       antialias: true,
-      dpr: Math.min(window.devicePixelRatio || 1, 2)
+      dpr: Math.min(window.devicePixelRatio || 1, maxDpr)
     });
     this.gl = this.renderer.gl;
     this.gl.clearColor(0, 0, 0, 0);
-    this.container.appendChild(this.renderer.gl.canvas as HTMLCanvasElement);
+    const canvas = this.renderer.gl.canvas as HTMLCanvasElement;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    this.container.appendChild(canvas);
   }
 
   createCamera() {
@@ -452,7 +471,60 @@ class App {
     });
   }
 
-  createMedias(
+  // Preload and reuse textures to eliminate duplicate GPU uploads.
+  private loadTexture(imageSrc: string): Promise<LoadedTexture> {
+    const cached = this.textureCache.get(imageSrc);
+    if (cached) return cached;
+
+    const promise = new Promise<LoadedTexture>(resolve => {
+      const texture = new Texture(this.gl, { generateMipmaps: false });
+      texture.minFilter = this.gl.LINEAR;
+      texture.magFilter = this.gl.LINEAR;
+      texture.wrapS = this.gl.CLAMP_TO_EDGE;
+      texture.wrapT = this.gl.CLAMP_TO_EDGE;
+
+      const image = new Image();
+      if (/^https?:/i.test(imageSrc)) {
+        image.crossOrigin = 'anonymous';
+      }
+
+      const commit = (source: HTMLImageElement | HTMLCanvasElement, width: number, height: number) => {
+        if (!this.isDestroyed) {
+          texture.image = source;
+          texture.needsUpdate = true;
+        }
+        resolve({ texture, size: [width || 1, height || 1] });
+      };
+
+      image.onload = () => {
+        const finalize = () => commit(image, image.naturalWidth || image.width, image.naturalHeight || image.height);
+        const decoder = (image as HTMLImageElement & { decode?: () => Promise<void> }).decode;
+        if (decoder) {
+          decoder.call(image).then(finalize).catch(() => finalize());
+        } else {
+          finalize();
+        }
+      };
+
+      image.onerror = () => {
+        const fallback = document.createElement('canvas');
+        fallback.width = fallback.height = 2;
+        const context = fallback.getContext('2d');
+        if (context) {
+          context.fillStyle = '#000';
+          context.fillRect(0, 0, fallback.width, fallback.height);
+        }
+        commit(fallback, fallback.width, fallback.height);
+      };
+
+      image.src = imageSrc;
+    });
+
+    this.textureCache.set(imageSrc, promise);
+    return promise;
+  }
+
+  async createMedias(
     items: { image: string; text: string }[] | undefined,
     bend: number = 1,
     textColor: string,
@@ -511,11 +583,23 @@ class App {
     ];
     const galleryItems = items && items.length ? items : defaultItems;
     this.mediasImages = galleryItems.concat(galleryItems);
+    const uniqueImages = Array.from(new Set(this.mediasImages.map(item => item.image)));
+    const textureEntries = await Promise.all(
+      uniqueImages.map(async imageSrc => {
+        const textureInfo = await this.loadTexture(imageSrc);
+        return [imageSrc, textureInfo] as const;
+      })
+    );
+
+    if (this.isDestroyed) return;
+
+    const textureMap = new Map<string, LoadedTexture>(textureEntries);
+
     this.medias = this.mediasImages.map((data, index) => {
+      const textureInfo = textureMap.get(data.image)!;
       return new Media({
         geometry: this.planeGeometry,
         gl: this.gl,
-        image: data.image,
         index,
         length: this.mediasImages.length,
         renderer: this.renderer,
@@ -526,9 +610,21 @@ class App {
         bend,
         textColor,
         borderRadius,
-        font
+        font,
+        textureInfo
       });
     });
+
+    this.onResize();
+    this.medias.forEach(media => media.update(this.scroll, 'right'));
+    this.medias.forEach(media => media.update(this.scroll, 'left'));
+    this.scroll.last = this.scroll.current;
+    this.renderer.render({ scene: this.scene, camera: this.camera });
+
+    if (!this.hasStartedLoop) {
+      this.hasStartedLoop = true;
+      this.update();
+    }
   }
 
   onTouchDown(e: MouseEvent | TouchEvent) {
@@ -549,6 +645,33 @@ class App {
     this.onCheck();
   }
 
+  onPointerEnter() {
+    this.isHover = true;
+    this.scroll.target = this.scroll.current;
+    this.scroll.last = this.scroll.current;
+  }
+
+  onPointerLeave() {
+    this.isHover = false;
+    this.scroll.last = this.scroll.current;
+  }
+
+  onWheel(e: Event) {
+    if (!this.wheelEnabled) {
+      return;
+    }
+    const wheelEvent = e as WheelEvent;
+    const path = 'composedPath' in wheelEvent ? wheelEvent.composedPath() : undefined;
+    const isInside = path
+      ? path.includes(this.container)
+      : wheelEvent.target instanceof Node && this.container.contains(wheelEvent.target);
+    if (!isInside) {
+      return;
+    }
+    const delta = wheelEvent.deltaY || (wheelEvent as any).wheelDelta || (wheelEvent as any).detail;
+    this.scroll.target += (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
+    this.onCheckDebounce();
+  }
 
   onCheck() {
     if (!this.medias || !this.medias[0]) return;
@@ -577,6 +700,9 @@ class App {
   }
 
   update() {
+    if (!this.isDown && !this.isHover && this.autoScrollSpeed !== 0) {
+      this.scroll.target += this.autoScrollSpeed;
+    }
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
     const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
     if (this.medias) {
@@ -584,7 +710,7 @@ class App {
     }
     this.renderer.render({ scene: this.scene, camera: this.camera });
     this.scroll.last = this.scroll.current;
-    this.raf = window.requestAnimationFrame(this.update.bind(this));
+    this.raf = window.requestAnimationFrame(this.update);
   }
 
   addEventListeners() {
@@ -592,6 +718,8 @@ class App {
     this.boundOnTouchDown = this.onTouchDown.bind(this);
     this.boundOnTouchMove = this.onTouchMove.bind(this);
     this.boundOnTouchUp = this.onTouchUp.bind(this);
+    this.boundOnPointerEnter = this.onPointerEnter.bind(this);
+    this.boundOnPointerLeave = this.onPointerLeave.bind(this);
     window.addEventListener('resize', this.boundOnResize);
     window.addEventListener('mousedown', this.boundOnTouchDown);
     window.addEventListener('mousemove', this.boundOnTouchMove);
@@ -599,9 +727,12 @@ class App {
     window.addEventListener('touchstart', this.boundOnTouchDown);
     window.addEventListener('touchmove', this.boundOnTouchMove);
     window.addEventListener('touchend', this.boundOnTouchUp);
+    this.container.addEventListener('mouseenter', this.boundOnPointerEnter);
+    this.container.addEventListener('mouseleave', this.boundOnPointerLeave);
   }
 
   destroy() {
+    this.isDestroyed = true;
     window.cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.boundOnResize);
     window.removeEventListener('mousedown', this.boundOnTouchDown);
@@ -610,9 +741,12 @@ class App {
     window.removeEventListener('touchstart', this.boundOnTouchDown);
     window.removeEventListener('touchmove', this.boundOnTouchMove);
     window.removeEventListener('touchend', this.boundOnTouchUp);
+    this.container.removeEventListener('mouseenter', this.boundOnPointerEnter);
+    this.container.removeEventListener('mouseleave', this.boundOnPointerLeave);
     if (this.renderer && this.renderer.gl && this.renderer.gl.canvas.parentNode) {
       this.renderer.gl.canvas.parentNode.removeChild(this.renderer.gl.canvas as HTMLCanvasElement);
     }
+    this.textureCache.clear();
   }
 }
 
@@ -624,6 +758,8 @@ interface CircularGalleryProps {
   font?: string;
   scrollSpeed?: number;
   scrollEase?: number;
+  wheelEnabled?: boolean;
+  autoScrollSpeed?: number;
 }
 
 export default function CircularGallery({
@@ -633,7 +769,9 @@ export default function CircularGallery({
   borderRadius = 0.05,
   font = 'bold 30px Figtree',
   scrollSpeed = 2,
-  scrollEase = 0.05
+  scrollEase = 0.05,
+  wheelEnabled = false,
+  autoScrollSpeed = 0.01
 }: CircularGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -645,11 +783,13 @@ export default function CircularGallery({
       borderRadius,
       font,
       scrollSpeed,
-      scrollEase
+      scrollEase,
+      wheelEnabled,
+      autoScrollSpeed
     });
     return () => {
       app.destroy();
     };
-  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase]);
+  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, wheelEnabled, autoScrollSpeed]);
   return <div className="w-full h-full overflow-hidden cursor-grab active:cursor-grabbing" ref={containerRef} />;
 }

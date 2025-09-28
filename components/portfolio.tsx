@@ -59,6 +59,7 @@ export function Portfolio() {
           font="600 28px 'IBM Plex Mono'"
           scrollSpeed={2}
           scrollEase={0.05}
+          autoScrollSpeed={0.01}
         />
       </div>
 
