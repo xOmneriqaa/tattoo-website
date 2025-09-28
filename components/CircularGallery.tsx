@@ -430,7 +430,13 @@ class App {
 
   isDown: boolean = false;
   start: number = 0;
+  startY: number = 0;
   isHover: boolean = false;
+  dragMultiplierPointer: number = 0;
+  dragMultiplierTouch: number = 0;
+  activeDragMultiplier: number = 0;
+  isCoarsePointer: boolean = false;
+  lastPointerWasTouch: boolean = false;
 
   constructor(
     container: HTMLElement,
@@ -453,6 +459,18 @@ class App {
     this.autoScrollSpeed = autoScrollSpeed;
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
     this.onCheckDebounce = debounce(this.onCheck.bind(this), 200);
+
+    this.isCoarsePointer =
+      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(pointer: coarse)').matches
+        : false;
+    this.dragMultiplierPointer = this.scrollSpeed * 0.025;
+    this.dragMultiplierTouch = this.scrollSpeed * (this.isCoarsePointer ? 0.07 : 0.05);
+    this.activeDragMultiplier = this.dragMultiplierPointer;
+    if (this.isCoarsePointer) {
+      this.autoScrollSpeed = autoScrollSpeed * 0.6;
+      this.scroll.ease = Math.min(scrollEase * 1.2, 0.12);
+    }
     this.createRenderer();
     this.createCamera();
     this.createScene();
@@ -754,7 +772,8 @@ class App {
   private clampTarget(target: number, reference: number = this.scroll.current): number {
     if (!this.medias || this.medias.length === 0) return target;
     const itemWidth = this.medias[0].width || 1;
-    const maxDelta = itemWidth * 6;
+    const maxDeltaBase = itemWidth * 6;
+    const maxDelta = this.lastPointerWasTouch ? itemWidth * 10 : maxDeltaBase;
     const delta = target - reference;
     if (delta > maxDelta) return reference + maxDelta;
     if (delta < -maxDelta) return reference - maxDelta;
@@ -764,19 +783,25 @@ class App {
   onTouchDown(e: MouseEvent | TouchEvent) {
     this.isDown = true;
     this.scroll.position = this.scroll.current;
-    this.start = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const point = 'touches' in e ? e.touches[0] : (e as MouseEvent);
+    this.start = point.clientX;
+    this.startY = point.clientY;
+    const isTouch = 'touches' in e;
+    this.lastPointerWasTouch = isTouch;
+    this.activeDragMultiplier = isTouch ? this.dragMultiplierTouch : this.dragMultiplierPointer;
   }
 
   onTouchMove(e: MouseEvent | TouchEvent) {
     if (!this.isDown) return;
-    const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const distance = (this.start - x) * (this.scrollSpeed * 0.025);
+    const point = 'touches' in e ? e.touches[0] : (e as MouseEvent);
+    const distance = (this.start - point.clientX) * this.activeDragMultiplier;
     const base = this.scroll.position ?? 0;
     this.scroll.target = this.clampTarget(base + distance, base);
   }
 
   onTouchUp() {
     this.isDown = false;
+    this.activeDragMultiplier = this.dragMultiplierPointer;
     this.onCheck();
   }
 
@@ -969,5 +994,11 @@ export default function CircularGallery({
     };
   }, [shouldInit, items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, wheelEnabled, autoScrollSpeed]);
 
-  return <div className="w-full h-full overflow-hidden cursor-grab active:cursor-grabbing" ref={containerRef} />;
+  return (
+    <div
+      className="w-full h-full overflow-hidden cursor-grab active:cursor-grabbing"
+      ref={containerRef}
+      style={{ touchAction: 'pan-y pinch-zoom' }}
+    />
+  );
 }

@@ -251,10 +251,10 @@
 /* Enhanced blueprint button with much more pronounced 3D gradient shadows */
 .blueprint-btn {
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(120, 102, 255, 0.22), transparent 62%),
-    radial-gradient(120% 140% at 100% 0%, rgba(38, 186, 164, 0.18), transparent 68%),
-    linear-gradient(135deg, #1b1d2b 0%, #121523 55%, #080a13 100%) !important;
-  border: 1px solid rgba(138, 118, 255, 0.25) !important;
+    radial-gradient(120% 140% at 0% 0%, rgba(130, 132, 140, 0.28), transparent 62%),
+    radial-gradient(120% 140% at 100% 0%, rgba(86, 88, 96, 0.24), transparent 68%),
+    linear-gradient(135deg, #2c2e34 0%, #1f2024 55%, #131417 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   color: #f5f7ff !important;
   font-family: var(--font-sans);
   font-size: 0.875rem;
@@ -269,14 +269,14 @@
   /* Much more dramatic shadow layers for extreme 3D effect */
   box-shadow:
     0 18px 36px rgba(5, 6, 12, 0.72),
-    0 10px 24px rgba(8, 11, 21, 0.55),
-    0 4px 12px rgba(10, 12, 20, 0.45),
-    0 2px 6px rgba(14, 16, 24, 0.35),
-    inset 0 2px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -3px 0 rgba(0, 0, 0, 0.6),
-    inset 0 -6px 16px rgba(0, 0, 0, 0.5),
-    inset 2px 0 4px rgba(129, 246, 227, 0.15),
-    inset -2px 0 4px rgba(108, 90, 255, 0.18);
+    0 10px 24px rgba(8, 11, 18, 0.55),
+    0 4px 12px rgba(10, 12, 16, 0.45),
+    0 2px 6px rgba(12, 14, 18, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.58),
+    inset 0 -6px 16px rgba(0, 0, 0, 0.48),
+    inset 2px 0 4px rgba(196, 198, 206, 0.12),
+    inset -2px 0 4px rgba(64, 66, 74, 0.26);
   transform: translateY(0) scale(1);
   cursor: pointer;
 }
@@ -289,7 +289,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
   transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
 }
@@ -299,7 +299,7 @@
   position: absolute;
   inset: 2px;
   border-radius: calc(0.5rem - 2px);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
   mix-blend-mode: screen;
   opacity: 0.65;
   z-index: 0;
@@ -317,20 +317,20 @@
 
 .blueprint-btn:hover {
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(132, 114, 255, 0.28), transparent 58%),
-    radial-gradient(120% 140% at 100% 0%, rgba(60, 212, 189, 0.22), transparent 66%),
-    linear-gradient(135deg, #24263a 0%, #171b2d 52%, #090c17 100%) !important;
+    radial-gradient(120% 140% at 0% 0%, rgba(156, 158, 166, 0.32), transparent 58%),
+    radial-gradient(120% 140% at 100% 0%, rgba(102, 104, 112, 0.26), transparent 66%),
+    linear-gradient(135deg, #35363d 0%, #23252a 52%, #15171b 100%) !important;
   /* Extreme hover shadow effects for maximum 3D depth */
   box-shadow:
-    0 24px 46px rgba(6, 7, 16, 0.8),
-    0 14px 30px rgba(12, 16, 30, 0.6),
-    0 8px 18px rgba(18, 22, 38, 0.46),
-    0 4px 10px rgba(22, 26, 42, 0.34),
-    inset 0 3px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -5px 0 rgba(0, 0, 0, 0.65),
-    inset 0 -10px 20px rgba(0, 0, 0, 0.5),
-    inset 3px 0 6px rgba(160, 255, 240, 0.18),
-    inset -3px 0 6px rgba(138, 116, 255, 0.22);
+    0 24px 46px rgba(6, 7, 12, 0.82),
+    0 14px 30px rgba(12, 15, 20, 0.62),
+    0 8px 18px rgba(16, 20, 26, 0.48),
+    0 4px 10px rgba(20, 24, 30, 0.36),
+    inset 0 3px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -5px 0 rgba(0, 0, 0, 0.66),
+    inset 0 -10px 20px rgba(0, 0, 0, 0.52),
+    inset 3px 0 6px rgba(206, 208, 214, 0.15),
+    inset -3px 0 6px rgba(72, 74, 82, 0.3);
   /* Preserve the hover lift without shifting out from under the cursor */
   transform: scale(1.02);
 }
@@ -341,17 +341,17 @@
 
 .blueprint-btn:active {
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(107, 90, 230, 0.18), transparent 68%),
-    radial-gradient(120% 140% at 100% 0%, rgba(30, 166, 151, 0.16), transparent 72%),
-    linear-gradient(135deg, #111321 0%, #0c0e18 45%, #05070d 100%) !important;
+    radial-gradient(120% 140% at 0% 0%, rgba(94, 96, 104, 0.26), transparent 68%),
+    radial-gradient(120% 140% at 100% 0%, rgba(54, 56, 64, 0.22), transparent 72%),
+    linear-gradient(135deg, #1a1b20 0%, #111217 45%, #07080b 100%) !important;
   /* Enhanced pressed state with deep inset shadows */
   box-shadow:
-    0 6px 12px rgba(4, 5, 11, 0.5),
-    inset 0 10px 20px rgba(0, 0, 0, 0.68),
-    inset 0 4px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -4px 8px rgba(0, 0, 0, 0.7),
-    inset 4px 0 8px rgba(64, 238, 210, 0.16),
-    inset -4px 0 8px rgba(124, 104, 255, 0.2);
+    0 6px 12px rgba(4, 5, 8, 0.52),
+    inset 0 10px 20px rgba(0, 0, 0, 0.7),
+    inset 0 4px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.72),
+    inset 4px 0 8px rgba(210, 212, 218, 0.12),
+    inset -4px 0 8px rgba(58, 60, 70, 0.28);
   /* Faster active state transition for immediate feedback */
   transform: scale(0.98);
   transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
