@@ -139,12 +139,6 @@ export function Hero() {
                     }}
                   />
                 ) : null}
-                <div
-                  aria-hidden="true"
-                  className={`pointer-events-none select-none absolute inset-0 ${shouldRenderAscii ? "hidden" : "flex"} items-center justify-center uppercase tracking-[0.35em] text-[#fdf9f3] text-4xl sm:text-5xl md:text-6xl`}
-                >
-                  DIDEM_KARACA
-                </div>
                 <h1 className="sr-only">DIDEM_KARACA</h1>
               </div>
               <div className="flex items-center gap-4 mb-6 justify-center lg:justify-start">
