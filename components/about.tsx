@@ -32,7 +32,7 @@ export function About() {
             <div
               className={`transition-all duration-700 delay-200 ${
                 isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
-              }`}
+              } text-center lg:text-left flex flex-col items-center lg:items-start`}
             >
               <div className="mb-6">
                 <DecryptedText
@@ -45,7 +45,7 @@ export function About() {
                   useOriginalCharsOnly
                 />
               </div>
-              <h2 className="text-4xl md:text-5xl font-mono font-light mb-8 text-foreground tech-accent">
+              <h2 className="text-4xl md:text-5xl font-mono font-light mb-8 text-foreground tech-accent text-center lg:text-left">
                 <DecryptedText
                   text="ABOUT_DIDEM"
                   parentClassName="block"
@@ -55,9 +55,9 @@ export function About() {
                 />
               </h2>
 
-              <div className="space-y-6 text-muted-foreground leading-relaxed">
-                <div className="space-y-4">
-                  <p className="font-mono text-base">
+              <div className="space-y-6 text-muted-foreground leading-relaxed w-full">
+                <div className="space-y-4 text-left">
+                  <p className="font-mono text-base text-left">
                     <span className="mono-highlight text-primary">
                       <DecryptedText
                         text="Professional"
@@ -77,7 +77,7 @@ export function About() {
                       useOriginalCharsOnly
                     />
                   </p>
-                  <p className="font-mono text-base">
+                  <p className="font-mono text-base text-left">
                     <DecryptedText
                       text="Specializing in"
                       parentClassName="inline-block"
@@ -126,7 +126,7 @@ export function About() {
                       useOriginalCharsOnly
                     />
                   </p>
-                  <p className="font-mono text-sm text-muted-foreground/80">
+                  <p className="font-mono text-sm text-muted-foreground/80 text-left">
                     <DecryptedText
                       text="Each piece is designed with precision and care, creating timeless art that speaks to your story."
                       parentClassName="inline-block"
@@ -140,7 +140,7 @@ export function About() {
               </div>
 
               <div className="mt-10 pt-6 border-t border-primary/20">
-                <div className="font-mono text-xs text-muted-foreground/60 mb-4 tracking-wider">
+                <div className="font-mono text-xs text-muted-foreground/60 mb-4 tracking-wider text-center lg:text-left">
                   <DecryptedText
                     text="CONNECT:"
                     parentClassName=""
@@ -155,7 +155,7 @@ export function About() {
                   href="https://instagram.com/didemrs"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-4 font-mono text-base text-primary hover:text-primary/80 transition-all duration-300 tech-accent group"
+                  className="inline-flex items-center gap-4 font-mono text-base text-primary hover:text-primary/80 transition-all duration-300 tech-accent group mx-auto lg:mx-0"
                 >
                   <svg
                     className="w-5 h-5 group-hover:scale-110 transition-transform"
@@ -176,20 +176,20 @@ export function About() {
             </div>
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 lg:flex lg:justify-end">
             <div
-              className={`relative transition-all duration-700 delay-400 ${
+              className={`relative w-full transition-all duration-700 delay-400 ${
                 isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
               }`}
             >
-              <div className="blueprint-card rounded-none p-4 max-w-sm ml-auto lg:ml-8">
+              <div className="blueprint-card rounded-none p-3 sm:p-4 w-full max-w-[92vw] sm:max-w-[80vw] md:max-w-[70vw] lg:w-[26rem] lg:max-w-none mx-auto lg:ml-8">
                 <div className="aspect-[4/5] overflow-hidden relative">
                   <Image
                     src="/didem-karaca-tattoo-artist-portrait.jpg"
                     alt="Didem Karaca - Tattoo Artist"
                     fill
                     className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
-                    sizes="(min-width: 1024px) 18rem, 80vw"
+                    sizes="(min-width: 1024px) 26rem, (min-width: 768px) 42rem, min(96vw, 36rem)"
                   />
                 </div>
                 <div className="mt-4 font-mono text-xs text-muted-foreground/60">

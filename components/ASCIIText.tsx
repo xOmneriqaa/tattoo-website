@@ -399,6 +399,7 @@ class CanvAscii {
     this.filter.setSize(w, h);
 
     this.center = { x: w / 2, y: h / 2 };
+    this.mouse = { x: this.center.x, y: this.center.y };
   }
 
   load() {

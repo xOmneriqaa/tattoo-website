@@ -1,6 +1,8 @@
 "use client"
 
-import CircularGallery from "@/components/CircularGallery"
+import dynamic from "next/dynamic"
+import { useEffect, useRef, useState } from "react"
+
 import DecryptedText from "@/components/DecryptedText"
 import { plexMonoFontStack } from "@/lib/fonts"
 
@@ -25,9 +27,92 @@ const galleryItems = whatsappImageBaseNames.map(fileName => ({
   text: "",
 }))
 
+const CircularGallery = dynamic(() => import("@/components/CircularGallery"), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-muted/40" aria-hidden="true" />,
+})
+
 export function Portfolio() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const [shouldRenderGallery, setShouldRenderGallery] = useState(false)
+
+  useEffect(() => {
+    if (shouldRenderGallery) {
+      return
+    }
+
+    const node = sectionRef.current
+    if (!node) {
+      setShouldRenderGallery(true)
+      return
+    }
+
+    let timeoutId: number | null = null
+    let idleHandle: number | null = null
+    let observer: IntersectionObserver | null = null
+
+    type RequestIdleCallback = (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+    type CancelIdleCallback = (handle: number) => void
+
+    const lazyWindow = window as typeof window & {
+      requestIdleCallback?: RequestIdleCallback
+      cancelIdleCallback?: CancelIdleCallback
+    }
+
+    const enable = () => {
+      setShouldRenderGallery(prev => (prev ? prev : true))
+      if (observer) {
+        observer.disconnect()
+        observer = null
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      if (idleHandle !== null && lazyWindow.cancelIdleCallback) {
+        lazyWindow.cancelIdleCallback(idleHandle)
+        idleHandle = null
+      }
+    }
+
+    ;(CircularGallery as unknown as { preload?: () => void }).preload?.()
+
+    if ("IntersectionObserver" in window) {
+      observer = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              enable()
+            }
+          })
+        },
+        { root: null, threshold: 0.1, rootMargin: "240px 0px" },
+      )
+      observer.observe(node)
+    } else {
+      enable()
+      return () => undefined
+    }
+
+    timeoutId = window.setTimeout(enable, 1600)
+
+    if (lazyWindow.requestIdleCallback) {
+      idleHandle = lazyWindow.requestIdleCallback(enable, { timeout: 1800 })
+    }
+
+    return () => {
+      observer?.disconnect()
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId)
+      }
+      if (idleHandle !== null && lazyWindow.cancelIdleCallback) {
+        lazyWindow.cancelIdleCallback(idleHandle)
+      }
+    }
+  }, [shouldRenderGallery])
+
   return (
-    <section id="portfolio" className="py-16" data-id="portfolio-section">
+    <section ref={sectionRef} id="portfolio" className="py-16" data-id="portfolio-section">
       <div className="px-6">
         <div className="text-center mb-12">
           <div className="mb-4">
@@ -54,16 +139,20 @@ export function Portfolio() {
       </div>
 
       <div className="relative w-full h-[420px] sm:h-[480px] md:h-[560px] lg:h-[620px]">
-        <CircularGallery
-          items={galleryItems}
-          bend={2}
-          textColor="#fdf9f3"
-          borderRadius={0.08}
-          font={`600 28px ${plexMonoFontStack}`}
-          scrollSpeed={2}
-          scrollEase={0.05}
-          autoScrollSpeed={0.01}
-        />
+        {shouldRenderGallery ? (
+          <CircularGallery
+            items={galleryItems}
+            bend={2}
+            textColor="#fdf9f3"
+            borderRadius={0.08}
+            font={`600 28px ${plexMonoFontStack}`}
+            scrollSpeed={2}
+            scrollEase={0.05}
+            autoScrollSpeed={0.01}
+          />
+        ) : (
+          <div className="w-full h-full bg-muted/30" aria-hidden="true" />
+        )}
       </div>
 
       <div className="px-6">

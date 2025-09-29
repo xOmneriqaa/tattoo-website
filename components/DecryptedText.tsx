@@ -1,6 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, HTMLMotionProps } from 'motion/react';
 
+function isWhitespaceCharacter(char: string): boolean {
+  return char === ' ' || char === '\n' || char === '\r' || char === '\t';
+}
+
 interface DecryptedTextProps extends HTMLMotionProps<'span'> {
   text: string;
   speed?: number;
@@ -69,39 +73,40 @@ export default function DecryptedText({
     };
 
     const availableChars = useOriginalCharsOnly
-      ? Array.from(new Set(text.split(''))).filter(char => char !== ' ')
+      ? Array.from(new Set(text.split(''))).filter(char => !isWhitespaceCharacter(char))
       : characters.split('');
 
     const shuffleText = (originalText: string, currentRevealed: Set<number>): string => {
       if (useOriginalCharsOnly) {
         const positions = originalText.split('').map((char, i) => ({
           char,
-          isSpace: char === ' ',
+          isWhitespace: isWhitespaceCharacter(char),
           index: i,
           isRevealed: currentRevealed.has(i)
         }));
 
-        const nonSpaceChars = positions.filter(p => !p.isSpace && !p.isRevealed).map(p => p.char);
+        const nonWhitespaceChars = positions.filter(p => !p.isWhitespace && !p.isRevealed).map(p => p.char);
 
-        for (let i = nonSpaceChars.length - 1; i > 0; i--) {
+        for (let i = nonWhitespaceChars.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [nonSpaceChars[i], nonSpaceChars[j]] = [nonSpaceChars[j], nonSpaceChars[i]];
+          [nonWhitespaceChars[i], nonWhitespaceChars[j]] = [nonWhitespaceChars[j], nonWhitespaceChars[i]];
         }
 
         let charIndex = 0;
         return positions
           .map(p => {
-            if (p.isSpace) return ' ';
+            if (p.isWhitespace) return p.char;
             if (p.isRevealed) return originalText[p.index];
-            return nonSpaceChars[charIndex++];
+            return nonWhitespaceChars[charIndex++];
           })
           .join('');
       } else {
         return originalText
           .split('')
           .map((char, i) => {
-            if (char === ' ') return ' ';
+            if (isWhitespaceCharacter(char)) return char;
             if (currentRevealed.has(i)) return originalText[i];
+            if (availableChars.length === 0) return originalText[i];
             return availableChars[Math.floor(Math.random() * availableChars.length)];
           })
           .join('');

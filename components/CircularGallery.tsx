@@ -431,11 +431,18 @@ class App {
   hasStartedLoop: boolean = false;
 
   boundOnResize!: () => void;
-  boundOnTouchDown!: (e: MouseEvent | TouchEvent) => void;
-  boundOnTouchMove!: (e: MouseEvent | TouchEvent) => void;
-  boundOnTouchUp!: () => void;
   boundOnPointerEnter!: () => void;
   boundOnPointerLeave!: () => void;
+  boundOnTouchDown?: (e: MouseEvent | TouchEvent | PointerEvent) => void;
+  boundOnTouchMove?: (e: MouseEvent | TouchEvent | PointerEvent) => void;
+  boundOnTouchUp?: () => void;
+  boundOnPointerDown?: (e: PointerEvent) => void;
+  boundOnPointerMove?: (e: PointerEvent) => void;
+  boundOnPointerUp?: (e: PointerEvent) => void;
+  boundOnPointerCancel?: (e: PointerEvent) => void;
+  boundOnLegacyMouseDown?: (e: MouseEvent) => void;
+  boundOnLegacyMouseMove?: (e: MouseEvent) => void;
+  boundOnLegacyMouseUp?: (e: MouseEvent) => void;
 
   isDown: boolean = false;
   start: number = 0;
@@ -446,6 +453,8 @@ class App {
   activeDragMultiplier: number = 0;
   isCoarsePointer: boolean = false;
   lastPointerWasTouch: boolean = false;
+  supportsPointerEvents: boolean = false;
+  activePointerId: number | null = null;
 
   constructor(
     container: HTMLElement,
@@ -473,6 +482,7 @@ class App {
       typeof window !== 'undefined' && typeof window.matchMedia === 'function'
         ? window.matchMedia('(pointer: coarse)').matches
         : false;
+    this.supportsPointerEvents = typeof window !== 'undefined' && 'PointerEvent' in window;
     this.dragMultiplierPointer = this.scrollSpeed * 0.025;
     this.dragMultiplierTouch = this.scrollSpeed * (this.isCoarsePointer ? 0.06 : 0.045);
     this.activeDragMultiplier = this.dragMultiplierPointer;
@@ -713,8 +723,18 @@ class App {
 
     const uniqueImages = Array.from(new Set(this.mediasImages.map(item => item.image)));
 
-    const eagerCount = Math.min(uniqueImages.length, 5);
-    const eagerImages = uniqueImages.slice(0, eagerCount);
+    const eagerSet = new Set<string>();
+    const leadingCount = Math.min(uniqueImages.length, 3);
+    for (let i = 0; i < leadingCount; i += 1) {
+      eagerSet.add(uniqueImages[i]);
+    }
+    const trailingCount = Math.min(uniqueImages.length, 3);
+    for (let i = uniqueImages.length - trailingCount; i < uniqueImages.length; i += 1) {
+      if (i >= 0) {
+        eagerSet.add(uniqueImages[i]);
+      }
+    }
+    const eagerImages = Array.from(eagerSet);
 
     if (eagerImages.length > 0) {
       await Promise.all(
@@ -733,7 +753,7 @@ class App {
       }
     }
 
-    const remainingImages = uniqueImages.slice(eagerCount);
+    const remainingImages = uniqueImages.filter(image => !eagerSet.has(image));
 
     const schedule = (cb: () => void) => {
       if (typeof window === 'undefined') {
@@ -789,20 +809,28 @@ class App {
     return target;
   }
 
-  onTouchDown(e: MouseEvent | TouchEvent) {
+  onTouchDown(e: MouseEvent | TouchEvent | PointerEvent) {
     this.isDown = true;
     this.scroll.position = this.scroll.current;
     const point = 'touches' in e ? e.touches[0] : (e as MouseEvent);
     this.start = point.clientX;
     this.startY = point.clientY;
-    const isTouch = 'touches' in e;
+    const isTouch =
+      'touches' in e
+        ? true
+        : 'pointerType' in e
+          ? (e as PointerEvent).pointerType === 'touch'
+          : false;
     this.lastPointerWasTouch = isTouch;
     this.activeDragMultiplier = isTouch ? this.dragMultiplierTouch : this.dragMultiplierPointer;
   }
 
-  onTouchMove(e: MouseEvent | TouchEvent) {
+  onTouchMove(e: MouseEvent | TouchEvent | PointerEvent) {
     if (!this.isDown) return;
     const point = 'touches' in e ? e.touches[0] : (e as MouseEvent);
+    if ('touches' in e) {
+      e.preventDefault();
+    }
     const distance = (this.start - point.clientX) * this.activeDragMultiplier;
     const base = this.scroll.position ?? 0;
     this.scroll.target = this.clampTarget(base + distance, base);
@@ -886,36 +914,144 @@ class App {
     this.raf = window.requestAnimationFrame(this.update);
   }
 
+  private handlePointerDown(e: PointerEvent) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    this.activePointerId = e.pointerId;
+    try {
+      this.container.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore capture errors (e.g., detached nodes).
+    }
+    this.onTouchDown(e);
+    if (e.pointerType !== 'touch') {
+      e.preventDefault();
+    }
+  }
+
+  private handlePointerMove(e: PointerEvent) {
+    if (this.activePointerId !== e.pointerId) return;
+    this.onTouchMove(e);
+    if (e.pointerType !== 'touch') {
+      e.preventDefault();
+    }
+  }
+
+  private handlePointerUp(e: PointerEvent) {
+    if (this.activePointerId !== e.pointerId) return;
+    this.onTouchUp();
+    this.releasePointerCaptureSafe(e.pointerId);
+  }
+
+  private handlePointerCancel(e: PointerEvent) {
+    if (this.activePointerId !== e.pointerId) return;
+    this.onTouchUp();
+    this.releasePointerCaptureSafe(e.pointerId);
+  }
+
+  private releasePointerCaptureSafe(pointerId: number) {
+    if (this.activePointerId !== pointerId) return;
+    try {
+      this.container.releasePointerCapture(pointerId);
+    } catch {
+      // Capture might already be released; ignore.
+    }
+    this.activePointerId = null;
+  }
+
+  private handleLegacyMouseDown(e: MouseEvent) {
+    if (e.button !== 0) return;
+    if (!this.boundOnTouchDown || !this.boundOnTouchMove) {
+      this.boundOnTouchDown = this.onTouchDown.bind(this);
+      this.boundOnTouchMove = this.onTouchMove.bind(this);
+      this.boundOnTouchUp = this.onTouchUp.bind(this);
+    }
+    this.boundOnLegacyMouseMove = this.onTouchMove.bind(this);
+    this.boundOnLegacyMouseUp = this.handleLegacyMouseUp.bind(this);
+    window.addEventListener('mousemove', this.boundOnLegacyMouseMove);
+    window.addEventListener('mouseup', this.boundOnLegacyMouseUp);
+    this.onTouchDown(e);
+    e.preventDefault();
+  }
+
+  private handleLegacyMouseUp() {
+    if (this.boundOnLegacyMouseMove) {
+      window.removeEventListener('mousemove', this.boundOnLegacyMouseMove);
+      this.boundOnLegacyMouseMove = undefined;
+    }
+    if (this.boundOnLegacyMouseUp) {
+      window.removeEventListener('mouseup', this.boundOnLegacyMouseUp);
+      this.boundOnLegacyMouseUp = undefined;
+    }
+    this.onTouchUp();
+  }
+
   addEventListeners() {
     this.boundOnResize = this.onResize.bind(this);
-    this.boundOnTouchDown = this.onTouchDown.bind(this);
-    this.boundOnTouchMove = this.onTouchMove.bind(this);
-    this.boundOnTouchUp = this.onTouchUp.bind(this);
     this.boundOnPointerEnter = this.onPointerEnter.bind(this);
     this.boundOnPointerLeave = this.onPointerLeave.bind(this);
     window.addEventListener('resize', this.boundOnResize);
-    window.addEventListener('mousedown', this.boundOnTouchDown);
-    window.addEventListener('mousemove', this.boundOnTouchMove);
-    window.addEventListener('mouseup', this.boundOnTouchUp);
-    window.addEventListener('touchstart', this.boundOnTouchDown);
-    window.addEventListener('touchmove', this.boundOnTouchMove);
-    window.addEventListener('touchend', this.boundOnTouchUp);
     this.container.addEventListener('mouseenter', this.boundOnPointerEnter);
     this.container.addEventListener('mouseleave', this.boundOnPointerLeave);
+
+    if (this.supportsPointerEvents) {
+      this.boundOnPointerDown = this.handlePointerDown.bind(this);
+      this.boundOnPointerMove = this.handlePointerMove.bind(this);
+      this.boundOnPointerUp = this.handlePointerUp.bind(this);
+      this.boundOnPointerCancel = this.handlePointerCancel.bind(this);
+      this.container.addEventListener('pointerdown', this.boundOnPointerDown);
+      this.container.addEventListener('pointermove', this.boundOnPointerMove);
+      this.container.addEventListener('pointerup', this.boundOnPointerUp);
+      this.container.addEventListener('pointercancel', this.boundOnPointerCancel);
+    } else {
+      this.boundOnTouchDown = this.onTouchDown.bind(this);
+      this.boundOnTouchMove = this.onTouchMove.bind(this);
+      this.boundOnTouchUp = this.onTouchUp.bind(this);
+      this.boundOnLegacyMouseDown = this.handleLegacyMouseDown.bind(this);
+      this.boundOnLegacyMouseUp = this.handleLegacyMouseUp.bind(this);
+      this.container.addEventListener('mousedown', this.boundOnLegacyMouseDown);
+      this.container.addEventListener('touchstart', this.boundOnTouchDown, { passive: false });
+      this.container.addEventListener('touchmove', this.boundOnTouchMove, { passive: false });
+      this.container.addEventListener('touchend', this.boundOnTouchUp);
+      this.container.addEventListener('touchcancel', this.boundOnTouchUp);
+    }
   }
 
   destroy() {
     this.isDestroyed = true;
     window.cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.boundOnResize);
-    window.removeEventListener('mousedown', this.boundOnTouchDown);
-    window.removeEventListener('mousemove', this.boundOnTouchMove);
-    window.removeEventListener('mouseup', this.boundOnTouchUp);
-    window.removeEventListener('touchstart', this.boundOnTouchDown);
-    window.removeEventListener('touchmove', this.boundOnTouchMove);
-    window.removeEventListener('touchend', this.boundOnTouchUp);
     this.container.removeEventListener('mouseenter', this.boundOnPointerEnter);
     this.container.removeEventListener('mouseleave', this.boundOnPointerLeave);
+    if (this.supportsPointerEvents) {
+      if (this.boundOnPointerDown) this.container.removeEventListener('pointerdown', this.boundOnPointerDown);
+      if (this.boundOnPointerMove) this.container.removeEventListener('pointermove', this.boundOnPointerMove);
+      if (this.boundOnPointerUp) this.container.removeEventListener('pointerup', this.boundOnPointerUp);
+      if (this.boundOnPointerCancel) this.container.removeEventListener('pointercancel', this.boundOnPointerCancel);
+      if (this.activePointerId !== null) {
+        try {
+          this.container.releasePointerCapture(this.activePointerId);
+        } catch {
+          // Ignore if capture was already released.
+        }
+        this.activePointerId = null;
+      }
+    } else {
+      if (this.boundOnLegacyMouseDown) {
+        this.container.removeEventListener('mousedown', this.boundOnLegacyMouseDown);
+      }
+      if (this.boundOnTouchDown) this.container.removeEventListener('touchstart', this.boundOnTouchDown);
+      if (this.boundOnTouchMove) this.container.removeEventListener('touchmove', this.boundOnTouchMove);
+      if (this.boundOnTouchUp) {
+        this.container.removeEventListener('touchend', this.boundOnTouchUp);
+        this.container.removeEventListener('touchcancel', this.boundOnTouchUp);
+      }
+      if (this.boundOnLegacyMouseMove) {
+        window.removeEventListener('mousemove', this.boundOnLegacyMouseMove);
+      }
+      if (this.boundOnLegacyMouseUp) {
+        window.removeEventListener('mouseup', this.boundOnLegacyMouseUp);
+      }
+    }
     if (this.renderer && this.renderer.gl && this.renderer.gl.canvas.parentNode) {
       this.renderer.gl.canvas.parentNode.removeChild(this.renderer.gl.canvas as HTMLCanvasElement);
     }
