@@ -77,30 +77,11 @@ export function Hero() {
   }, [])
 
   const asciiConfig = asciiMode === "lite"
-    ? { asciiFontSize: 3.6, textFontSize: 270, planeBaseHeight: 5.6, enableWaves: true as const }
+    ? { asciiFontSize: 4, textFontSize: 300, planeBaseHeight: 6.2, enableWaves: true as const }
     : { asciiFontSize: 3.8, textFontSize: 250, planeBaseHeight: 6, enableWaves: true as const }
 
   return (
     <section className="min-h-screen flex items-center px-6 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-64 h-64 border border-primary/20 rotate-12 translate-x-32 -translate-y-32"></div>
-      <div className="absolute bottom-0 left-0 w-32 h-32 border border-primary/10 -rotate-45 -translate-x-16 translate-y-16"></div>
-
-      <div className="absolute top-4 left-4 font-mono text-xs text-muted-foreground/50">
-        <DecryptedText
-          text="// DIDEM_KARACA"
-          parentClassName="block"
-          animateOn="view"
-          sequential
-          useOriginalCharsOnly
-        />
-        <DecryptedText
-          text="// STATUS: ACTIVE"
-          parentClassName="block"
-          animateOn="view"
-          sequential
-          useOriginalCharsOnly
-        />
-      </div>
 
       <div className="max-w-7xl w-full mx-auto">
         <div className="grid lg:grid-cols-3 gap-12 items-center">

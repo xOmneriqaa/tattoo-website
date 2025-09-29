@@ -5,8 +5,6 @@ import DecryptedText from "@/components/DecryptedText"
 export function Contact() {
   return (
     <section id="contact" className="py-16 px-6 relative">
-      <div className="pointer-events-none absolute -top-12 right-6 hidden md:block h-32 w-32 border border-primary/20 rotate-6" />
-      <div className="pointer-events-none absolute bottom-0 left-6 hidden md:block h-20 w-20 border border-primary/10 -rotate-12 translate-y-1/2" />
 
       <div className="relative max-w-5xl mx-auto">
         <div className="grid gap-10 lg:grid-cols-5 items-center">
@@ -114,7 +112,6 @@ export function Contact() {
           </div>
 
           <div className="lg:col-span-2 relative flex flex-col items-center">
-            <div className="hidden lg:block absolute -top-6 -left-8 h-16 w-16 border border-primary/10" aria-hidden="true" />
             <div className="space-y-6 w-full max-w-sm">
               <div className="blueprint-card rounded-none p-6 shadow-lg shadow-primary/10 text-center lg:text-left">
                 <div className="font-mono text-xs text-muted-foreground/60 tracking-widest mb-3">
