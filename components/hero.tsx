@@ -138,7 +138,7 @@ export function Hero() {
               </div>
               <DecryptedText
                 text="Conceptual designs. Microrealism. Fine line work."
-                parentClassName="block text-sm font-mono text-muted-foreground max-w-lg leading-relaxed mb-8 line-numbers text-center lg:text-left mx-auto lg:mx-0"
+                parentClassName="block text-sm font-mono text-muted-foreground max-w-lg leading-relaxed mb-8 text-center lg:text-left mx-auto lg:mx-0"
                 encryptedClassName="text-muted-foreground/40"
                 animateOn="view"
                 sequential
