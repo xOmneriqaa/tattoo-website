@@ -7,6 +7,9 @@ import { inter, playfair, plexMono } from "@/lib/fonts"
 
 import "./globals.css"
 
+// Reduce main thread blocking by deferring non-critical styles
+const criticalFonts = `${inter.variable} ${plexMono.variable}`
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://didemkaraca.com"
 const metadataBase = new URL(siteUrl)
 const primaryOgImage = "/didem-karaca-tattoo-artist-portrait.jpg"

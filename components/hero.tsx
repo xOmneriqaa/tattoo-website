@@ -10,13 +10,9 @@ const ASCIIText = dynamic(() => import("@/components/ASCIIText"), {
 });
 
 export function Hero() {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true); // Start visible immediately
   const [shouldRenderAscii, setShouldRenderAscii] = useState(false);
   const [asciiMode, setAsciiMode] = useState<"full" | "lite">("full");
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -43,7 +39,7 @@ export function Hero() {
       }
     };
 
-    (ASCIIText as typeof ASCIIText & { preload?: () => void }).preload?.();
+    // Removed preload call - let dynamic import handle loading on demand
 
     type RequestIdleCallback = (
       callback: IdleRequestCallback,
@@ -58,7 +54,8 @@ export function Hero() {
       };
 
     let idleHandle: number | null = null;
-    const timeoutDelay = isSmallScreen ? 1200 : 800;
+    // Delay ASCII rendering to reduce initial load blocking
+    const timeoutDelay = isSmallScreen ? 1800 : 1400;
     let timeoutHandle: number | null = window.setTimeout(enable, timeoutDelay);
 
     if (requestIdleCallback) {
@@ -70,7 +67,7 @@ export function Hero() {
             timeoutHandle = null;
           }
         },
-        { timeout: isSmallScreen ? 1600 : 1200 },
+        { timeout: isSmallScreen ? 3000 : 2400 },
       );
     }
 
@@ -121,10 +118,11 @@ export function Hero() {
                   animateOn="view"
                   sequential
                   useOriginalCharsOnly
+                  priority
                 />
               </div>
               <div className="relative h-[200px] sm:h-[240px] md:h-[280px] lg:h-[320px] mb-6">
-                {shouldRenderAscii ? (
+                {shouldRenderAscii && (
                   <ASCIIText
                     text="DIDEM_KARACA"
                     asciiFontSize={asciiConfig.asciiFontSize}
@@ -140,7 +138,7 @@ export function Hero() {
                       height: "100%",
                     }}
                   />
-                ) : null}
+                )}
                 <h1 className="sr-only">DIDEM_KARACA</h1>
               </div>
               <div className="flex items-center gap-4 mb-6 justify-center lg:justify-start">
@@ -154,6 +152,7 @@ export function Hero() {
                     animateOn="view"
                     sequential
                     useOriginalCharsOnly
+                    priority
                   />
                 </span>
               </div>
@@ -164,6 +163,7 @@ export function Hero() {
                 animateOn="view"
                 sequential
                 useOriginalCharsOnly
+                priority
               />
 
               <div className="mb-12">
@@ -188,6 +188,7 @@ export function Hero() {
                     animateOn="view"
                     sequential
                     useOriginalCharsOnly
+                    priority
                   />
                 </a>
               </div>
@@ -204,6 +205,7 @@ export function Hero() {
                 animateOn="view"
                 sequential
                 useOriginalCharsOnly
+                priority
               />
               <div className="w-px h-16 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
             </div>
@@ -221,6 +223,7 @@ export function Hero() {
             animateOn="view"
             sequential
             useOriginalCharsOnly
+            priority
           />
           <div className="w-px h-12 bg-gradient-to-b from-primary via-primary/50 to-transparent animate-pulse"></div>
         </div>

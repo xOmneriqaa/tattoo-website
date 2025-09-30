@@ -1,11 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
-import { motion, HTMLMotionProps } from 'motion/react';
 
 function isWhitespaceCharacter(char: string): boolean {
   return char === ' ' || char === '\n' || char === '\r' || char === '\t';
 }
 
-interface DecryptedTextProps extends HTMLMotionProps<'span'> {
+interface DecryptedTextProps extends React.HTMLAttributes<HTMLSpanElement> {
   text: string;
   speed?: number;
   maxIterations?: number;
@@ -18,11 +17,15 @@ interface DecryptedTextProps extends HTMLMotionProps<'span'> {
   parentClassName?: string;
   animateOn?: 'view' | 'hover' | 'both';
   triggerOnce?: boolean;
+  priority?: boolean; // Start animation immediately without waiting
 }
+
+// Global counter to stagger animation starts
+let globalAnimationCounter = 0;
 
 export default function DecryptedText({
   text,
-  speed = 35,
+  speed = 25, // Faster default speed for snappier feel
   maxIterations = 10,
   sequential = false,
   revealDirection = 'start',
@@ -33,6 +36,7 @@ export default function DecryptedText({
   encryptedClassName = '',
   animateOn = 'hover',
   triggerOnce,
+  priority = false,
   ...props
 }: DecryptedTextProps) {
   const [displayText, setDisplayText] = useState<string>(text);
@@ -42,6 +46,7 @@ export default function DecryptedText({
   const containerRef = useRef<HTMLSpanElement>(null);
   const hasAnimatedRef = useRef<boolean>(false);
   const shouldTriggerOnce = triggerOnce ?? animateOn === 'view';
+  const animationDelayRef = useRef<number>(0);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -113,7 +118,8 @@ export default function DecryptedText({
       }
     };
 
-    const revealBatch = sequential ? Math.max(1, Math.ceil(text.length / 64)) : 1;
+    // Larger batch size for priority animations to complete faster
+    const revealBatch = sequential ? Math.max(1, Math.ceil(text.length / (priority ? 32 : 48))) : 1;
 
     if (isHovering) {
       setIsScrambling(true);
@@ -172,11 +178,31 @@ export default function DecryptedText({
 
     if (shouldTriggerOnce && hasAnimatedRef.current) return;
 
+    // Priority animations start immediately with minimal stagger
+    if (priority) {
+      animationDelayRef.current = globalAnimationCounter * 15; // 15ms stagger for priority
+      globalAnimationCounter++;
+
+      setTimeout(() => {
+        setIsHovering(true);
+        hasAnimatedRef.current = true;
+      }, animationDelayRef.current);
+
+      return;
+    }
+
+    // Non-priority: start immediately when visible with very small delay
+    animationDelayRef.current = 50; // Minimal delay for non-priority
+
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
       entries.forEach(entry => {
         if (entry.isIntersecting && (!shouldTriggerOnce || !hasAnimatedRef.current)) {
-          setIsHovering(true);
-          hasAnimatedRef.current = true;
+          // Start animation almost immediately when in view
+          setTimeout(() => {
+            setIsHovering(true);
+            hasAnimatedRef.current = true;
+          }, animationDelayRef.current);
+
           if (shouldTriggerOnce) {
             observer.disconnect();
           }
@@ -186,8 +212,8 @@ export default function DecryptedText({
 
     const observerOptions = {
       root: null,
-      rootMargin: '0px',
-      threshold: 0.1
+      rootMargin: '100px', // Trigger earlier
+      threshold: 0.01
     };
 
     const observer = new IntersectionObserver(observerCallback, observerOptions);
@@ -200,7 +226,7 @@ export default function DecryptedText({
       if (currentRef) observer.unobserve(currentRef);
       observer.disconnect();
     };
-  }, [animateOn, shouldTriggerOnce]);
+  }, [animateOn, shouldTriggerOnce, priority]);
 
   const hoverProps =
     animateOn === 'hover' || animateOn === 'both'
@@ -211,7 +237,7 @@ export default function DecryptedText({
       : {};
 
   return (
-    <motion.span
+    <span
       ref={containerRef}
       className={`whitespace-pre-wrap ${parentClassName}`}
       {...hoverProps}
@@ -230,6 +256,6 @@ export default function DecryptedText({
           );
         })}
       </span>
-    </motion.span>
+    </span>
   );
 }

@@ -371,9 +371,11 @@ class CanvAscii {
     this.renderer = new THREE.WebGLRenderer({
       antialias: false,
       alpha: true,
-      powerPreference: 'low-power'
+      powerPreference: 'low-power',
+      stencil: false,
+      depth: false
     });
-    this.renderer.setPixelRatio(1);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.setClearColor(0x000000, 0);
 
     this.filter = new AsciiFilter(this.renderer, {

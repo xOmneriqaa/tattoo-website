@@ -75,7 +75,7 @@ export function Portfolio() {
       }
     }
 
-    ;(CircularGallery as unknown as { preload?: () => void }).preload?.()
+    // Removed preload call - let dynamic import handle loading on demand
 
     if ("IntersectionObserver" in window) {
       observer = new IntersectionObserver(

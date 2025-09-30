@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -129,6 +128,8 @@
   left: 0;
   width: 100%;
   height: 100%;
+  contain: layout style paint;
+  will-change: auto;
 }
 
 .ascii-text-container canvas {
@@ -144,6 +145,8 @@
   image-rendering: optimize-contrast;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .ascii-text-container pre {
@@ -161,6 +164,8 @@
   -webkit-background-clip: text;
   z-index: 9;
   mix-blend-mode: difference;
+  transform: translateZ(0);
+  will-change: auto;
 }
 
 /* Adding blueprint-style grid patterns and technical aesthetic */
@@ -170,6 +175,7 @@
     linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
   background-size: 20px 20px;
   position: relative;
+  contain: layout paint;
 }
 
 .blueprint-grid::before {
@@ -183,6 +189,7 @@
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 100px 100px;
   pointer-events: none;
+  transform: translateZ(0);
 }
 
 /* Technical line numbers */
@@ -210,6 +217,7 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   position: relative;
   overflow: hidden;
+  contain: layout style paint;
 }
 
 .blueprint-card::before {
@@ -222,6 +230,7 @@
   background-image: linear-gradient(45deg, transparent 49%, rgba(255, 255, 255, 0.03) 50%, transparent 51%);
   background-size: 10px 10px;
   pointer-events: none;
+  transform: translateZ(0);
 }
 
 /* Technical accent lines */
@@ -266,19 +275,16 @@
     cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  /* Much more dramatic shadow layers for extreme 3D effect */
+  /* Simplified shadows for faster initial render */
   box-shadow:
-    0 18px 36px rgba(5, 6, 12, 0.72),
-    0 10px 24px rgba(8, 11, 18, 0.55),
-    0 4px 12px rgba(10, 12, 16, 0.45),
-    0 2px 6px rgba(12, 14, 18, 0.35),
-    inset 0 2px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -3px 0 rgba(0, 0, 0, 0.58),
-    inset 0 -6px 16px rgba(0, 0, 0, 0.48),
-    inset 2px 0 4px rgba(196, 198, 206, 0.12),
-    inset -2px 0 4px rgba(64, 66, 74, 0.26);
+    0 12px 24px rgba(5, 6, 12, 0.6),
+    0 6px 12px rgba(8, 11, 18, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.4);
   transform: translateY(0) scale(1);
   cursor: pointer;
+  contain: layout style;
+  will-change: transform;
 }
 
 /* Added shimmer effect overlay for more engaging hover animation */
@@ -320,17 +326,12 @@
     radial-gradient(120% 140% at 0% 0%, rgba(156, 158, 166, 0.32), transparent 58%),
     radial-gradient(120% 140% at 100% 0%, rgba(102, 104, 112, 0.26), transparent 66%),
     linear-gradient(135deg, #35363d 0%, #23252a 52%, #15171b 100%) !important;
-  /* Extreme hover shadow effects for maximum 3D depth */
+  /* Simplified hover shadows */
   box-shadow:
-    0 24px 46px rgba(6, 7, 12, 0.82),
-    0 14px 30px rgba(12, 15, 20, 0.62),
-    0 8px 18px rgba(16, 20, 26, 0.48),
-    0 4px 10px rgba(20, 24, 30, 0.36),
-    inset 0 3px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -5px 0 rgba(0, 0, 0, 0.66),
-    inset 0 -10px 20px rgba(0, 0, 0, 0.52),
-    inset 3px 0 6px rgba(206, 208, 214, 0.15),
-    inset -3px 0 6px rgba(72, 74, 82, 0.3);
+    0 16px 32px rgba(6, 7, 12, 0.7),
+    0 8px 16px rgba(12, 15, 20, 0.5),
+    inset 0 2px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.5);
   /* Preserve the hover lift without shifting out from under the cursor */
   transform: scale(1.02);
 }
@@ -344,9 +345,9 @@
     radial-gradient(120% 140% at 0% 0%, rgba(94, 96, 104, 0.26), transparent 68%),
     radial-gradient(120% 140% at 100% 0%, rgba(54, 56, 64, 0.22), transparent 72%),
     linear-gradient(135deg, #1a1b20 0%, #111217 45%, #07080b 100%) !important;
-  /* Enhanced pressed state with deep inset shadows */
+  /* Simplified pressed state */
   box-shadow:
-    0 6px 12px rgba(4, 5, 8, 0.52),
+    0 4px 8px rgba(4, 5, 8, 0.4),
     inset 0 10px 20px rgba(0, 0, 0, 0.7),
     inset 0 4px 0 rgba(255, 255, 255, 0.1),
     inset 0 -4px 8px rgba(0, 0, 0, 0.72),
