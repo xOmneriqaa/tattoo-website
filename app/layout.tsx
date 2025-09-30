@@ -4,11 +4,9 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 
 import { inter, playfair, plexMono } from "@/lib/fonts"
+import FontPreload from "./font-preload"
 
 import "./globals.css"
-
-// Reduce main thread blocking by deferring non-critical styles
-const criticalFonts = `${inter.variable} ${plexMono.variable}`
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://didemkaraca.com"
 const metadataBase = new URL(siteUrl)
@@ -91,6 +89,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <FontPreload />
+      </head>
       <body
         className={`relative min-h-screen blueprint-grid silky-texture font-sans ${inter.variable} ${playfair.variable} ${plexMono.variable} antialiased`}
       >

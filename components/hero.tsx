@@ -10,7 +10,7 @@ const ASCIIText = dynamic(() => import("@/components/ASCIIText"), {
 });
 
 export function Hero() {
-  const [isVisible, setIsVisible] = useState(true); // Start visible immediately
+  const [isVisible] = useState(true); // Start visible immediately
   const [shouldRenderAscii, setShouldRenderAscii] = useState(false);
   const [asciiMode, setAsciiMode] = useState<"full" | "lite">("full");
 

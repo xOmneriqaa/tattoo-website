@@ -171,7 +171,7 @@ export default function DecryptedText({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isHovering, text, speed, maxIterations, sequential, revealDirection, characters, useOriginalCharsOnly, shouldTriggerOnce]);
+  }, [isHovering, text, speed, maxIterations, sequential, revealDirection, characters, useOriginalCharsOnly, shouldTriggerOnce, priority]);
 
   useEffect(() => {
     if (animateOn !== 'view' && animateOn !== 'both') return;
@@ -226,7 +226,8 @@ export default function DecryptedText({
       if (currentRef) observer.unobserve(currentRef);
       observer.disconnect();
     };
-  }, [animateOn, shouldTriggerOnce, priority]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animateOn, shouldTriggerOnce]);
 
   const hoverProps =
     animateOn === 'hover' || animateOn === 'both'
