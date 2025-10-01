@@ -54,8 +54,8 @@ export function Hero() {
       };
 
     let idleHandle: number | null = null;
-    // Delay ASCII rendering to reduce initial load blocking
-    const timeoutDelay = isSmallScreen ? 1800 : 1400;
+    // Reduced delay for faster initial render
+    const timeoutDelay = isSmallScreen ? 1200 : 800;
     let timeoutHandle: number | null = window.setTimeout(enable, timeoutDelay);
 
     if (requestIdleCallback) {
@@ -67,7 +67,7 @@ export function Hero() {
             timeoutHandle = null;
           }
         },
-        { timeout: isSmallScreen ? 3000 : 2400 },
+        { timeout: isSmallScreen ? 2000 : 1400 },
       );
     }
 

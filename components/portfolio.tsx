@@ -86,7 +86,7 @@ export function Portfolio() {
             }
           })
         },
-        { root: null, threshold: 0.1, rootMargin: "240px 0px" },
+        { root: null, threshold: 0.1, rootMargin: "300px 0px" },
       )
       observer.observe(node)
     } else {
@@ -94,10 +94,10 @@ export function Portfolio() {
       return () => undefined
     }
 
-    timeoutId = window.setTimeout(enable, 1600)
+    timeoutId = window.setTimeout(enable, 1200)
 
     if (lazyWindow.requestIdleCallback) {
-      idleHandle = lazyWindow.requestIdleCallback(enable, { timeout: 1800 })
+      idleHandle = lazyWindow.requestIdleCallback(enable, { timeout: 1400 })
     }
 
     return () => {
