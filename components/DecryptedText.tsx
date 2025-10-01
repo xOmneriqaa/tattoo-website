@@ -223,8 +223,8 @@ export default function DecryptedText({
 
     const observerOptions = {
       root: null,
-      rootMargin: '100px', // Trigger earlier
-      threshold: 0.01
+      rootMargin: '0px',
+      threshold: 0.1
     };
 
     const observer = new IntersectionObserver(observerCallback, observerOptions);

@@ -55,7 +55,6 @@ export function Hero() {
       };
 
     let idleHandle: number | null = null;
-    // Reduced delay for faster initial render
     const timeoutDelay = isSmallScreen ? 1200 : 800;
     let timeoutHandle: number | null = window.setTimeout(enable, timeoutDelay);
 

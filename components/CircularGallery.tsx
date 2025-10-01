@@ -1112,19 +1112,12 @@ export default function CircularGallery({
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           if (!shouldInit) {
-            const triggerInit = () => setShouldInit(true);
-            type RequestIdleCallback = (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
-            const idleWindow = window as typeof window & { requestIdleCallback?: RequestIdleCallback };
-            if (idleWindow.requestIdleCallback) {
-              idleWindow.requestIdleCallback(triggerInit, { timeout: 750 });
-            } else {
-              window.requestAnimationFrame(triggerInit);
-            }
+            setShouldInit(true);
+            observer.disconnect();
           }
-          observer.disconnect();
         }
       });
-    }, { threshold: 0, rootMargin: '300px 0px' });
+    }, { threshold: 0.1, rootMargin: '200px 0px' });
 
     observer.observe(node);
     return () => observer.disconnect();
