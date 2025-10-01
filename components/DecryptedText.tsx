@@ -17,11 +17,24 @@ interface DecryptedTextProps extends React.HTMLAttributes<HTMLSpanElement> {
   parentClassName?: string;
   animateOn?: 'view' | 'hover' | 'both';
   triggerOnce?: boolean;
-  priority?: boolean; // Start animation immediately without waiting
+  priority?: boolean;
 }
 
-// Global counter to stagger animation starts
 let globalAnimationCounter = 0;
+let resetTimeoutId: number | undefined;
+
+function scheduleCounterReset() {
+  if (typeof window === 'undefined') return;
+  
+  if (resetTimeoutId !== undefined) {
+    window.clearTimeout(resetTimeoutId);
+  }
+  
+  resetTimeoutId = window.setTimeout(() => {
+    globalAnimationCounter = 0;
+    resetTimeoutId = undefined;
+  }, 5000);
+}
 
 export default function DecryptedText({
   text,
@@ -118,8 +131,7 @@ export default function DecryptedText({
       }
     };
 
-    // Larger batch size for priority animations to complete faster
-    const revealBatch = sequential ? Math.max(1, Math.ceil(text.length / (priority ? 32 : 48))) : 1;
+    const revealBatch = sequential ? Math.max(1, Math.ceil(text.length / (priority ? 20 : 30))) : 1;
 
     if (isHovering) {
       setIsScrambling(true);
@@ -178,10 +190,10 @@ export default function DecryptedText({
 
     if (shouldTriggerOnce && hasAnimatedRef.current) return;
 
-    // Priority animations start immediately with minimal stagger
     if (priority) {
-      animationDelayRef.current = globalAnimationCounter * 15; // 15ms stagger for priority
+      animationDelayRef.current = globalAnimationCounter * 15;
       globalAnimationCounter++;
+      scheduleCounterReset();
 
       setTimeout(() => {
         setIsHovering(true);
@@ -191,8 +203,7 @@ export default function DecryptedText({
       return;
     }
 
-    // Non-priority: start immediately when visible with very small delay
-    animationDelayRef.current = 50; // Minimal delay for non-priority
+    animationDelayRef.current = 50;
 
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
       entries.forEach(entry => {

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic"
 import { useEffect, useRef, useState } from "react"
 
 import DecryptedText from "@/components/DecryptedText"
+import { WebGLErrorBoundary } from "@/components/WebGLErrorBoundary"
 import { plexMonoFontStack } from "@/lib/fonts"
 
 const WHATSAPP_IMAGE_EXTENSION = "avif" as const
@@ -140,16 +141,18 @@ export function Portfolio() {
 
       <div className="relative w-full h-[420px] sm:h-[480px] md:h-[560px] lg:h-[620px]">
         {shouldRenderGallery ? (
-          <CircularGallery
-            items={galleryItems}
-            bend={2}
-            textColor="#fdf9f3"
-            borderRadius={0.08}
-            font={`600 28px ${plexMonoFontStack}`}
-            scrollSpeed={2}
-            scrollEase={0.05}
-            autoScrollSpeed={0.01}
-          />
+          <WebGLErrorBoundary fallback={<div className="w-full h-full bg-muted/30" aria-hidden="true" />}>
+            <CircularGallery
+              items={galleryItems}
+              bend={2}
+              textColor="#fdf9f3"
+              borderRadius={0.08}
+              font={`600 28px ${plexMonoFontStack}`}
+              scrollSpeed={2}
+              scrollEase={0.05}
+              autoScrollSpeed={0.01}
+            />
+          </WebGLErrorBoundary>
         ) : (
           <div className="w-full h-full bg-muted/30" aria-hidden="true" />
         )}

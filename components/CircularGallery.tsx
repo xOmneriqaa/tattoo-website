@@ -17,10 +17,8 @@ function lerp(p1: number, p2: number, t: number): number {
   return p1 + (p2 - p1) * t;
 }
 
-type BindableInstance = Record<string, unknown>;
-
-function autoBind<T extends BindableInstance>(instance: T): void {
-  const proto = Object.getPrototypeOf(instance) as BindableInstance;
+function autoBind<T extends object>(instance: T): void {
+  const proto = Object.getPrototypeOf(instance) as object;
   Object.getOwnPropertyNames(proto).forEach(key => {
     const descriptor = Object.getOwnPropertyDescriptor(proto, key);
     const value = descriptor?.value;
@@ -198,7 +196,6 @@ class Media {
   isBefore: boolean = false;
   isAfter: boolean = false;
   textureInfo: LoadedTexture;
-  imageSrc: string;
 
   constructor({
     geometry,
@@ -429,6 +426,9 @@ class App {
   raf: number = 0;
   isDestroyed: boolean = false;
   hasStartedLoop: boolean = false;
+  lastFrameTime: number = 0;
+  targetFPS: number = 60;
+  frameInterval: number = 1000 / 60;
 
   boundOnResize!: () => void;
   boundOnPointerEnter!: () => void;
@@ -686,7 +686,7 @@ class App {
       }
     ];
     const galleryItems = items && items.length ? items : defaultItems;
-    this.mediasImages = galleryItems.concat(galleryItems);
+    this.mediasImages = galleryItems;
 
     const placeholderInfo = this.createPlaceholderTexture();
 
@@ -900,7 +900,17 @@ class App {
     }
   }
 
-  update() {
+  update(currentTime: number = 0) {
+    this.raf = window.requestAnimationFrame(this.update);
+    
+    const deltaTime = currentTime - this.lastFrameTime;
+    
+    if (deltaTime < this.frameInterval) {
+      return;
+    }
+    
+    this.lastFrameTime = currentTime - (deltaTime % this.frameInterval);
+    
     if (!this.isDown && !this.isHover && this.autoScrollSpeed !== 0) {
       this.scroll.target = this.clampTarget(this.scroll.target + this.autoScrollSpeed);
     }
@@ -911,7 +921,6 @@ class App {
     }
     this.renderer.render({ scene: this.scene, camera: this.camera });
     this.scroll.last = this.scroll.current;
-    this.raf = window.requestAnimationFrame(this.update);
   }
 
   private handlePointerDown(e: PointerEvent) {

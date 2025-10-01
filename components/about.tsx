@@ -190,6 +190,8 @@ export function About() {
                     fill
                     className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
                     sizes="(min-width: 1024px) 26rem, (min-width: 768px) 42rem, min(96vw, 36rem)"
+                    priority
+                    quality={90}
                   />
                 </div>
                 <div className="mt-4 font-mono text-xs text-muted-foreground/60">

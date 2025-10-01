@@ -424,6 +424,19 @@ class CanvAscii {
     animateFrame();
   }
 
+  pause() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = 0;
+    }
+  }
+
+  resume() {
+    if (!this.animationFrameId) {
+      this.animate();
+    }
+  }
+
   render() {
     const time = new Date().getTime() * 0.001;
 
@@ -445,8 +458,8 @@ class CanvAscii {
   }
 
   clear() {
-    this.scene.traverse(object => {
-      const obj = object as unknown as THREE.Mesh;
+    this.scene.traverse((object: THREE.Object3D) => {
+      const obj = object as THREE.Mesh;
       if (!obj.isMesh) return;
       [obj.material].flat().forEach(material => {
         material.dispose();
@@ -496,6 +509,7 @@ export default function ASCIIText({
 }: ASCIITextProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const asciiRef = useRef<CanvAscii | null>(null);
+  const visibilityObserverRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -563,8 +577,28 @@ export default function ASCIIText({
     });
     ro.observe(containerRef.current);
 
+    visibilityObserverRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!asciiRef.current) return;
+          
+          if (entry.isIntersecting) {
+            asciiRef.current.resume();
+          } else {
+            asciiRef.current.pause();
+          }
+        });
+      },
+      { threshold: 0, rootMargin: '100px 0px' }
+    );
+    
+    visibilityObserverRef.current.observe(containerRef.current);
+
     return () => {
       ro.disconnect();
+      if (visibilityObserverRef.current) {
+        visibilityObserverRef.current.disconnect();
+      }
       if (asciiRef.current) {
         asciiRef.current.dispose();
       }

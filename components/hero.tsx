@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
 import DecryptedText from "@/components/DecryptedText";
+import { WebGLErrorBoundary } from "@/components/WebGLErrorBoundary";
 
 const ASCIIText = dynamic(() => import("@/components/ASCIIText"), {
   ssr: false,
@@ -123,21 +124,23 @@ export function Hero() {
               </div>
               <div className="relative h-[200px] sm:h-[240px] md:h-[280px] lg:h-[320px] mb-6">
                 {shouldRenderAscii && (
-                  <ASCIIText
-                    text="DIDEM_KARACA"
-                    asciiFontSize={asciiConfig.asciiFontSize}
-                    textFontSize={asciiConfig.textFontSize}
-                    textColor="#fdf9f3"
-                    planeBaseHeight={asciiConfig.planeBaseHeight}
-                    enableWaves={asciiConfig.enableWaves}
-                    containerStyle={{
-                      width: "min(100vw, 68rem)",
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      top: 0,
-                      height: "100%",
-                    }}
-                  />
+                  <WebGLErrorBoundary>
+                    <ASCIIText
+                      text="DIDEM_KARACA"
+                      asciiFontSize={asciiConfig.asciiFontSize}
+                      textFontSize={asciiConfig.textFontSize}
+                      textColor="#fdf9f3"
+                      planeBaseHeight={asciiConfig.planeBaseHeight}
+                      enableWaves={asciiConfig.enableWaves}
+                      containerStyle={{
+                        width: "min(100vw, 68rem)",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        top: 0,
+                        height: "100%",
+                      }}
+                    />
+                  </WebGLErrorBoundary>
                 )}
                 <h1 className="sr-only">DIDEM_KARACA</h1>
               </div>
