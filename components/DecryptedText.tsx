@@ -190,29 +190,20 @@ export default function DecryptedText({
 
     if (shouldTriggerOnce && hasAnimatedRef.current) return;
 
-    if (priority) {
-      animationDelayRef.current = globalAnimationCounter * 15;
-      globalAnimationCounter++;
-      scheduleCounterReset();
-
-      setTimeout(() => {
-        setIsHovering(true);
-        hasAnimatedRef.current = true;
-      }, animationDelayRef.current);
-
-      return;
-    }
-
-    animationDelayRef.current = 50;
-
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
       entries.forEach(entry => {
         if (entry.isIntersecting && (!shouldTriggerOnce || !hasAnimatedRef.current)) {
-          // Start animation almost immediately when in view
+          const delay = priority ? globalAnimationCounter * 15 : 50;
+
+          if (priority) {
+            globalAnimationCounter++;
+            scheduleCounterReset();
+          }
+
           setTimeout(() => {
             setIsHovering(true);
             hasAnimatedRef.current = true;
-          }, animationDelayRef.current);
+          }, delay);
 
           if (shouldTriggerOnce) {
             observer.disconnect();
@@ -238,7 +229,7 @@ export default function DecryptedText({
       observer.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animateOn, shouldTriggerOnce]);
+  }, [animateOn, shouldTriggerOnce, priority]);
 
   const hoverProps =
     animateOn === 'hover' || animateOn === 'both'
