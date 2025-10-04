@@ -1,12 +1,15 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
+import dynamic from "next/dynamic"
 
 import { inter, playfair, plexMono } from "@/lib/fonts"
-import FontPreload from "./font-preload"
 
 import "./globals.css"
+
+const Analytics = dynamic(() => import("@vercel/analytics/next").then(mod => ({ default: mod.Analytics })), {
+  ssr: false,
+})
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://didemkaraca.com"
 const metadataBase = new URL(siteUrl)
@@ -92,7 +95,6 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <FontPreload />
       </head>
       <body
         className={`relative min-h-screen blueprint-grid silky-texture font-sans ${inter.variable} ${playfair.variable} ${plexMono.variable} antialiased`}

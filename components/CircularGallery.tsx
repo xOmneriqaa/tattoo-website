@@ -724,11 +724,11 @@ class App {
     const uniqueImages = Array.from(new Set(this.mediasImages.map(item => item.image)));
 
     const eagerSet = new Set<string>();
-    const leadingCount = Math.min(uniqueImages.length, 3);
+    const leadingCount = Math.min(uniqueImages.length, 1);
     for (let i = 0; i < leadingCount; i += 1) {
       eagerSet.add(uniqueImages[i]);
     }
-    const trailingCount = Math.min(uniqueImages.length, 3);
+    const trailingCount = Math.min(uniqueImages.length, 1);
     for (let i = uniqueImages.length - trailingCount; i < uniqueImages.length; i += 1) {
       if (i >= 0) {
         eagerSet.add(uniqueImages[i]);
@@ -766,7 +766,7 @@ class App {
     if (remainingImages.length > 0) {
       let nextIndex = 0;
       let active = 0;
-      const maxConcurrent = Math.min(3, remainingImages.length);
+      const maxConcurrent = Math.min(2, remainingImages.length);
 
       const pump = () => {
         if (this.isDestroyed) return;

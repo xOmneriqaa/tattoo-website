@@ -190,7 +190,7 @@ export function About() {
                     fill
                     className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
                     sizes="(min-width: 1024px) 26rem, (min-width: 768px) 42rem, min(96vw, 36rem)"
-                    priority
+                    loading="lazy"
                     quality={90}
                   />
                 </div>
