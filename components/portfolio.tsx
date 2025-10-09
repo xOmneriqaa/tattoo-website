@@ -48,30 +48,44 @@ export function Portfolio() {
     let preloadHandle: number | null = null
 
     const preloadImages = async () => {
+      // Dynamically import Three.js to avoid bloating main bundle
+      // Research: https://stackoverflow.com/questions/31155211/preload-textures-and-images-in-threejs
+      const THREE = await import('three')
+
       // Get unique image URLs
       const imageUrls = galleryItems.map(item => item.image)
+
+      // Enable THREE.Cache for all TextureLoaders to share cached assets
+      THREE.Cache.enabled = true
+
+      // Create TextureLoader instance for preloading
+      // Research shows TextureLoader.load() properly caches textures for reuse
+      const textureLoader = new THREE.TextureLoader()
+
+      // Helper function to preload using THREE.TextureLoader
+      // From research: TextureLoader caches loaded textures when THREE.Cache.enabled = true
+      const preloadImage = (url: string): Promise<void> => {
+        return new Promise((resolve) => {
+          textureLoader.load(
+            url,
+            () => resolve(), // onLoad
+            undefined, // onProgress
+            () => resolve() // onError - resolve even on error to not block
+          )
+        })
+      }
 
       // Preload first and last images with high priority
       const priorityImages = [imageUrls[0], imageUrls[imageUrls.length - 1]]
       const remainingImages = imageUrls.slice(1, -1)
 
       try {
-        // Load priority images first
-        await Promise.all(
-          priorityImages.map(url =>
-            fetch(url, {
-              priority: 'high' as RequestPriority,
-              cache: 'force-cache'
-            }).catch(() => {}) // Ignore errors
-          )
-        )
+        // Load priority images first (parallel)
+        await Promise.all(priorityImages.map(url => preloadImage(url)))
 
-        // Load remaining images progressively with low priority
+        // Load remaining images progressively (fire and forget for bandwidth control)
         for (const url of remainingImages) {
-          fetch(url, {
-            priority: 'low' as RequestPriority,
-            cache: 'force-cache'
-          }).catch(() => {}) // Ignore errors
+          void preloadImage(url)
         }
       } catch {
         // Silently fail - images will load normally when gallery renders

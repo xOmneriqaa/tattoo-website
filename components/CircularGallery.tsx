@@ -152,6 +152,9 @@ class ThreeGallery {
       this.scroll.ease = Math.min(scrollEase * 1.2, 0.12);
     }
 
+    // Enable THREE.Cache to utilize browser's image cache from preloaded images
+    THREE.Cache.enabled = true;
+
     this.textureLoader = new THREE.TextureLoader();
 
     this.createRenderer();
