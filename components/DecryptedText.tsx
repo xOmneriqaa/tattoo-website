@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback, memo } from 'react';
 
 function isWhitespaceCharacter(char: string): boolean {
   return char === ' ' || char === '\n' || char === '\r' || char === '\t';
@@ -25,20 +25,20 @@ let resetTimeoutId: number | undefined;
 
 function scheduleCounterReset() {
   if (typeof window === 'undefined') return;
-  
+
   if (resetTimeoutId !== undefined) {
     window.clearTimeout(resetTimeoutId);
   }
-  
+
   resetTimeoutId = window.setTimeout(() => {
     globalAnimationCounter = 0;
     resetTimeoutId = undefined;
   }, 5000);
 }
 
-export default function DecryptedText({
+function DecryptedText({
   text,
-  speed = 25, // Faster default speed for snappier feel
+  speed = 25,
   maxIterations = 10,
   sequential = false,
   revealDirection = 'start',
@@ -58,84 +58,115 @@ export default function DecryptedText({
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set());
   const containerRef = useRef<HTMLSpanElement>(null);
   const hasAnimatedRef = useRef<boolean>(false);
+  const animationFrameRef = useRef<number>(0);
+  const lastUpdateRef = useRef<number>(0);
+  const currentIterationRef = useRef<number>(0);
   const shouldTriggerOnce = triggerOnce ?? animateOn === 'view';
-  const animationDelayRef = useRef<number>(0);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    let currentIteration = 0;
-
-    const getNextIndex = (revealedSet: Set<number>): number => {
-      const textLength = text.length;
-      switch (revealDirection) {
-        case 'start':
-          return revealedSet.size;
-        case 'end':
-          return textLength - 1 - revealedSet.size;
-        case 'center': {
-          const middle = Math.floor(textLength / 2);
-          const offset = Math.floor(revealedSet.size / 2);
-          const nextIndex = revealedSet.size % 2 === 0 ? middle + offset : middle - offset - 1;
-
-          if (nextIndex >= 0 && nextIndex < textLength && !revealedSet.has(nextIndex)) {
-            return nextIndex;
-          }
-          for (let i = 0; i < textLength; i++) {
-            if (!revealedSet.has(i)) return i;
-          }
-          return 0;
-        }
-        default:
-          return revealedSet.size;
-      }
-    };
-
-    const availableChars = useOriginalCharsOnly
+  // Memoize available characters
+  const availableChars = useMemo(() =>
+    useOriginalCharsOnly
       ? Array.from(new Set(text.split(''))).filter(char => !isWhitespaceCharacter(char))
-      : characters.split('');
+      : characters.split(''),
+    [useOriginalCharsOnly, text, characters]
+  );
 
-    const shuffleText = (originalText: string, currentRevealed: Set<number>): string => {
-      if (useOriginalCharsOnly) {
-        const positions = originalText.split('').map((char, i) => ({
-          char,
-          isWhitespace: isWhitespaceCharacter(char),
-          index: i,
-          isRevealed: currentRevealed.has(i)
-        }));
+  // Memoize reveal batch size
+  const revealBatch = useMemo(() =>
+    sequential ? Math.max(1, Math.ceil(text.length / (priority ? 20 : 30))) : 1,
+    [sequential, text.length, priority]
+  );
 
-        const nonWhitespaceChars = positions.filter(p => !p.isWhitespace && !p.isRevealed).map(p => p.char);
+  // Memoize getNextIndex function
+  const getNextIndex = useCallback((revealedSet: Set<number>): number => {
+    const textLength = text.length;
+    switch (revealDirection) {
+      case 'start':
+        return revealedSet.size;
+      case 'end':
+        return textLength - 1 - revealedSet.size;
+      case 'center': {
+        const middle = Math.floor(textLength / 2);
+        const offset = Math.floor(revealedSet.size / 2);
+        const nextIndex = revealedSet.size % 2 === 0 ? middle + offset : middle - offset - 1;
 
-        for (let i = nonWhitespaceChars.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [nonWhitespaceChars[i], nonWhitespaceChars[j]] = [nonWhitespaceChars[j], nonWhitespaceChars[i]];
+        if (nextIndex >= 0 && nextIndex < textLength && !revealedSet.has(nextIndex)) {
+          return nextIndex;
         }
-
-        let charIndex = 0;
-        return positions
-          .map(p => {
-            if (p.isWhitespace) return p.char;
-            if (p.isRevealed) return originalText[p.index];
-            return nonWhitespaceChars[charIndex++];
-          })
-          .join('');
-      } else {
-        return originalText
-          .split('')
-          .map((char, i) => {
-            if (isWhitespaceCharacter(char)) return char;
-            if (currentRevealed.has(i)) return originalText[i];
-            if (availableChars.length === 0) return originalText[i];
-            return availableChars[Math.floor(Math.random() * availableChars.length)];
-          })
-          .join('');
+        for (let i = 0; i < textLength; i++) {
+          if (!revealedSet.has(i)) return i;
+        }
+        return 0;
       }
-    };
+      default:
+        return revealedSet.size;
+    }
+  }, [text.length, revealDirection]);
 
-    const revealBatch = sequential ? Math.max(1, Math.ceil(text.length / (priority ? 20 : 30))) : 1;
+  // Memoize shuffleText function
+  const shuffleText = useCallback((originalText: string, currentRevealed: Set<number>): string => {
+    if (useOriginalCharsOnly) {
+      const positions = originalText.split('').map((char, i) => ({
+        char,
+        isWhitespace: isWhitespaceCharacter(char),
+        index: i,
+        isRevealed: currentRevealed.has(i)
+      }));
 
-    if (isHovering) {
-      setIsScrambling(true);
-      interval = setInterval(() => {
+      const nonWhitespaceChars = positions.filter(p => !p.isWhitespace && !p.isRevealed).map(p => p.char);
+
+      for (let i = nonWhitespaceChars.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [nonWhitespaceChars[i], nonWhitespaceChars[j]] = [nonWhitespaceChars[j], nonWhitespaceChars[i]];
+      }
+
+      let charIndex = 0;
+      return positions
+        .map(p => {
+          if (p.isWhitespace) return p.char;
+          if (p.isRevealed) return originalText[p.index];
+          return nonWhitespaceChars[charIndex++];
+        })
+        .join('');
+    } else {
+      return originalText
+        .split('')
+        .map((char, i) => {
+          if (isWhitespaceCharacter(char)) return char;
+          if (currentRevealed.has(i)) return originalText[i];
+          if (availableChars.length === 0) return originalText[i];
+          return availableChars[Math.floor(Math.random() * availableChars.length)];
+        })
+        .join('');
+    }
+  }, [useOriginalCharsOnly, availableChars, text]);
+
+  // Use requestAnimationFrame instead of setInterval
+  useEffect(() => {
+    if (!isHovering) {
+      setDisplayText(text);
+      if (!shouldTriggerOnce || !hasAnimatedRef.current) {
+        setRevealedIndices(new Set());
+      }
+      setIsScrambling(false);
+      currentIterationRef.current = 0;
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = 0;
+      }
+      return;
+    }
+
+    setIsScrambling(true);
+    lastUpdateRef.current = performance.now();
+    currentIterationRef.current = 0;
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - lastUpdateRef.current;
+
+      if (elapsed >= speed) {
+        lastUpdateRef.current = currentTime;
+
         setRevealedIndices(prevRevealed => {
           if (sequential) {
             if (prevRevealed.size < text.length) {
@@ -150,7 +181,6 @@ export default function DecryptedText({
               setDisplayText(shuffleText(text, newRevealed));
               return newRevealed;
             } else {
-              clearInterval(interval);
               setIsScrambling(false);
               if (shouldTriggerOnce) {
                 setIsHovering(false);
@@ -159,9 +189,8 @@ export default function DecryptedText({
             }
           } else {
             setDisplayText(shuffleText(text, prevRevealed));
-            currentIteration++;
-            if (currentIteration >= maxIterations) {
-              clearInterval(interval);
+            currentIterationRef.current++;
+            if (currentIterationRef.current >= maxIterations) {
               setIsScrambling(false);
               setDisplayText(text);
               if (shouldTriggerOnce) {
@@ -171,19 +200,21 @@ export default function DecryptedText({
             return prevRevealed;
           }
         });
-      }, speed);
-    } else {
-      setDisplayText(text);
-      if (!shouldTriggerOnce || !hasAnimatedRef.current) {
-        setRevealedIndices(new Set());
       }
-      setIsScrambling(false);
-    }
+
+      if (isHovering && (sequential && revealedIndices.size < text.length || !sequential && currentIterationRef.current < maxIterations)) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (interval) clearInterval(interval);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
-  }, [isHovering, text, speed, maxIterations, sequential, revealDirection, characters, useOriginalCharsOnly, shouldTriggerOnce, priority]);
+  }, [isHovering, text, speed, maxIterations, sequential, shouldTriggerOnce, getNextIndex, shuffleText, revealBatch, revealedIndices.size]);
 
   useEffect(() => {
     if (animateOn !== 'view' && animateOn !== 'both') return;
@@ -228,16 +259,31 @@ export default function DecryptedText({
       if (currentRef) observer.unobserve(currentRef);
       observer.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [animateOn, shouldTriggerOnce, priority]);
 
-  const hoverProps =
+  // Memoize hover props
+  const hoverProps = useMemo(() =>
     animateOn === 'hover' || animateOn === 'both'
       ? {
           onMouseEnter: () => setIsHovering(true),
           onMouseLeave: () => setIsHovering(false)
         }
-      : {};
+      : {},
+    [animateOn]
+  );
+
+  // Memoize character spans
+  const characterSpans = useMemo(() =>
+    displayText.split('').map((char, index) => {
+      const isRevealedOrDone = revealedIndices.has(index) || !isScrambling || !isHovering;
+      return (
+        <span key={index} className={isRevealedOrDone ? className : encryptedClassName}>
+          {char}
+        </span>
+      );
+    }),
+    [displayText, revealedIndices, isScrambling, isHovering, className, encryptedClassName]
+  );
 
   return (
     <span
@@ -249,16 +295,11 @@ export default function DecryptedText({
       <span className="sr-only">{displayText}</span>
 
       <span aria-hidden="true">
-        {displayText.split('').map((char, index) => {
-          const isRevealedOrDone = revealedIndices.has(index) || !isScrambling || !isHovering;
-
-          return (
-            <span key={index} className={isRevealedOrDone ? className : encryptedClassName}>
-              {char}
-            </span>
-          );
-        })}
+        {characterSpans}
       </span>
     </span>
   );
 }
+
+// Export memoized component
+export default memo(DecryptedText);

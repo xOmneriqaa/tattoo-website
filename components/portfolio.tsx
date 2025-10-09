@@ -5,8 +5,6 @@ import { useEffect, useRef, useState } from "react"
 
 import DecryptedText from "@/components/DecryptedText"
 import { WebGLErrorBoundary } from "@/components/WebGLErrorBoundary"
-import { plexMonoFontStack } from "@/lib/fonts"
-
 const WHATSAPP_IMAGE_EXTENSION = "avif" as const
 
 const whatsappImageBaseNames = [
@@ -147,7 +145,6 @@ export function Portfolio() {
               bend={2}
               textColor="#fdf9f3"
               borderRadius={0.08}
-              font={`600 28px ${plexMonoFontStack}`}
               scrollSpeed={2}
               scrollEase={0.05}
               autoScrollSpeed={0.01}

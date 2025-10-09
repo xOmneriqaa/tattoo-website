@@ -77,6 +77,9 @@ class AsciiFilter {
   cols: number = 0;
   rows: number = 0;
 
+  frameCount: number = 0;
+  asciiUpdateInterval: number = 2; // Update ASCII every 2 frames instead of every frame
+
   constructor(renderer: THREE.WebGLRenderer, { fontSize, fontFamily, charset, invert }: AsciiFilterOptions = {}) {
     this.renderer = renderer;
     this.domElement = document.createElement('div');
@@ -90,6 +93,7 @@ class AsciiFilter {
     this.domElement.appendChild(this.pre);
 
     this.canvas = document.createElement('canvas');
+    // willReadFrequently hint for getImageData optimization
     this.context =
       this.canvas.getContext('2d', { willReadFrequently: true }) ?? this.canvas.getContext('2d');
     this.domElement.appendChild(this.canvas);
@@ -101,7 +105,6 @@ class AsciiFilter {
     this.charset = charset ?? ' .\'`^",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$';
 
     if (this.context) {
-      this.context.imageSmoothingEnabled = false;
       this.context.imageSmoothingEnabled = false;
     }
 
@@ -146,6 +149,12 @@ class AsciiFilter {
 
   render(scene: THREE.Scene, camera: THREE.Camera) {
     this.renderer.render(scene, camera);
+
+    // Only update ASCII conversion every N frames to reduce CPU usage
+    this.frameCount++;
+    if (this.frameCount % this.asciiUpdateInterval !== 0) {
+      return;
+    }
 
     const w = this.canvas.width;
     const h = this.canvas.height;
@@ -304,6 +313,7 @@ class CanvAscii {
   filter!: AsciiFilter;
   center!: { x: number; y: number };
   animationFrameId: number = 0;
+  textNeedsUpdate: boolean = false;
 
   constructor(
     { text, asciiFontSize, textFontSize, textColor, planeBaseHeight, enableWaves }: CanvAsciiOptions,
@@ -326,6 +336,7 @@ class CanvAscii {
 
     this.scene = new THREE.Scene();
     this.mouse = { x: 0, y: 0 };
+    this.textNeedsUpdate = true; // Render text on first frame
 
     this.onMouseMove = this.onMouseMove.bind(this);
 
@@ -375,7 +386,8 @@ class CanvAscii {
       stencil: false,
       depth: false
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // Lower DPR for ASCII effect - 1.0 is sufficient and saves performance
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
     this.renderer.setClearColor(0x000000, 0);
 
     this.filter = new AsciiFilter(this.renderer, {
@@ -440,8 +452,12 @@ class CanvAscii {
   render() {
     const time = new Date().getTime() * 0.001;
 
-    this.textCanvas.render();
-    this.texture.needsUpdate = true;
+    // Only update text canvas when text changes, not every frame
+    if (this.textNeedsUpdate) {
+      this.textCanvas.render();
+      this.texture.needsUpdate = true;
+      this.textNeedsUpdate = false;
+    }
 
     (this.mesh.material as THREE.ShaderMaterial).uniforms.uTime.value = Math.sin(time);
 
