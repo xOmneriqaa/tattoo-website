@@ -35,6 +35,69 @@ export function Portfolio() {
   const sectionRef = useRef<HTMLElement>(null)
   const [shouldRenderGallery, setShouldRenderGallery] = useState(false)
 
+  // Early image preloading effect - starts on mount during idle time
+  useEffect(() => {
+    type RequestIdleCallback = (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+    type CancelIdleCallback = (handle: number) => void
+
+    const lazyWindow = window as typeof window & {
+      requestIdleCallback?: RequestIdleCallback
+      cancelIdleCallback?: CancelIdleCallback
+    }
+
+    let preloadHandle: number | null = null
+
+    const preloadImages = async () => {
+      // Get unique image URLs
+      const imageUrls = galleryItems.map(item => item.image)
+
+      // Preload first and last images with high priority
+      const priorityImages = [imageUrls[0], imageUrls[imageUrls.length - 1]]
+      const remainingImages = imageUrls.slice(1, -1)
+
+      try {
+        // Load priority images first
+        await Promise.all(
+          priorityImages.map(url =>
+            fetch(url, {
+              priority: 'high' as RequestPriority,
+              cache: 'force-cache'
+            }).catch(() => {}) // Ignore errors
+          )
+        )
+
+        // Load remaining images progressively with low priority
+        for (const url of remainingImages) {
+          fetch(url, {
+            priority: 'low' as RequestPriority,
+            cache: 'force-cache'
+          }).catch(() => {}) // Ignore errors
+        }
+      } catch {
+        // Silently fail - images will load normally when gallery renders
+      }
+    }
+
+    // Start preloading during browser idle time
+    if (lazyWindow.requestIdleCallback) {
+      preloadHandle = lazyWindow.requestIdleCallback(() => {
+        void preloadImages()
+      }, { timeout: 2000 })
+    } else {
+      // Fallback for browsers without requestIdleCallback
+      setTimeout(() => {
+        void preloadImages()
+      }, 1000)
+    }
+
+    return () => {
+      if (preloadHandle !== null && lazyWindow.cancelIdleCallback) {
+        lazyWindow.cancelIdleCallback(preloadHandle)
+      }
+    }
+  }, [])
+
+  // Gallery rendering effect
   useEffect(() => {
     if (shouldRenderGallery) {
       return
@@ -73,8 +136,6 @@ export function Portfolio() {
         idleHandle = null
       }
     }
-
-    // Removed preload call - let dynamic import handle loading on demand
 
     if ("IntersectionObserver" in window) {
       observer = new IntersectionObserver(
